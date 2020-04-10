@@ -267,7 +267,8 @@ wtap_h_cdef = """
 
 /* After adding new item here, please also add new item to encap_table_base array */
 
-#define WTAP_NUM_ENCAP_TYPES                    wtap_get_num_encap_types()
+// FIXME:
+// May be in set_source #define WTAP_NUM_ENCAP_TYPES                    wtap_get_num_encap_types()
 
 /* File types/subtypes that can be read by wiretap.
    We support writing many of these file types, too, so we
@@ -384,7 +385,7 @@ wtap_h_cdef = """
  * allocate a buffer much larger than necessary, wasting memory.
  */
 #define WTAP_MAX_PACKET_SIZE_STANDARD    262144
-#define WTAP_MAX_PACKET_SIZE_DBUS        (128*1024*1024)
+#define WTAP_MAX_PACKET_SIZE_DBUS        134217728
 
 /*
  * "Pseudo-headers" are used to supply to the clients of wiretap
@@ -755,8 +756,9 @@ struct ieee_802_11ac {
 #define PHDR_802_11AD_MIN_FREQUENCY    57000
 #define PHDR_802_11AD_MAX_FREQUENCY    66000
 
-#define IS_80211AD(frequency) (((frequency) >= PHDR_802_11AD_MIN_FREQUENCY) &&\
-                               ((frequency) <= PHDR_802_11AD_MAX_FREQUENCY))
+// FIXME:
+// May be as a part of set_source #define IS_80211AD(frequency) (((frequency) >= PHDR_802_11AD_MIN_FREQUENCY) &&\
+//                               ((frequency) <= PHDR_802_11AD_MAX_FREQUENCY))
 
 struct ieee_802_11ad {
     /* Which of this information is present? */

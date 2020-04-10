@@ -7,7 +7,9 @@ from wtap_h import wtap_h_cdef
 from wtap_opttypes_h import wtap_opttypes_h_cdef
 
 from wsutil_buffer_h import wsutil_buffer_h_cdef
+from wsutil_inet_ipv4_h import wsutil_inet_ipv4_h_cdef
 from wsutil_inet_ipv6_h import wsutil_inet_ipv6_h_cdef
+from wsutil_inet_addr_h import wsutil_inet_addr_h_cdef
 
 # from ws_symbols_h import ws_symbols_h_cdef
 
@@ -21,7 +23,9 @@ wtap_ffi.cdef(glist_h_cdef)
 wtap_ffi.cdef(nstime_h_cdef)
 
 wtap_ffi.cdef(wsutil_buffer_h_cdef)
+wtap_ffi.cdef(wsutil_inet_ipv4_h_cdef)
 wtap_ffi.cdef(wsutil_inet_ipv6_h_cdef)
+wtap_ffi.cdef(wsutil_inet_addr_h_cdef)
 wtap_ffi.cdef(wtap_opttypes_h_cdef)
 
 # Get the definitions from our on library
@@ -30,6 +34,7 @@ wtap_ffi.cdef(wtap_h_cdef)
 
 if __name__ == '__main__':
     wtap_lib = wtap_ffi.verify('''
+            #include <wireshark/config.h>
             #include <wireshark/wiretap/wtap.h>
 
         ''',
