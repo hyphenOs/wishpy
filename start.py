@@ -10,74 +10,9 @@ cdef = iface.cdef('''
 /** First All types definitions that are required by our API */
 /* Type Definitions Begin */
 
-// stuff from C standard library without having to do lot of including
-typedef long int time_t; // Taken from /usr/include/x86_64
-
 
 // From <epan/epan.h>
 typedef struct epan_session epan_t;
-
-
-// From </usr/lib/x86_64-gnu-linux/gconfig.h>
-
-typedef signed char gint8;
-typedef unsigned char guint8;
-typedef signed short gint16;
-typedef unsigned short guint16;
-
-typedef signed int gint32;
-typedef unsigned int guint32;
-#define G_HAVE_GINT64 1          /* deprecated, always true */
-
-typedef signed long gint64;
-typedef unsigned long guint64;
-
-// From <glib-2.0/glib/gtypes.h>
-typedef char   gchar;
-typedef short  gshort;
-typedef long   glong;
-typedef int    gint;
-typedef gint   gboolean;
-
-typedef unsigned char   guchar;
-typedef unsigned short  gushort;
-typedef unsigned long   gulong;
-typedef unsigned int    guint;
-
-typedef float   gfloat;
-typedef double  gdouble;
-
-/* Define min and max constants for the fixed size numerical types
-// Following are not allowed - Let's see how to fix this later
-
-#define G_MININT8	((gint8) -0x80)
-#define G_MAXINT8	((gint8)  0x7f)
-#define G_MAXUINT8	((guint8) 0xff)
-
-#define G_MININT16	((gint16) -0x8000)
-#define G_MAXINT16	((gint16)  0x7fff)
-#define G_MAXUINT16	((guint16) 0xffff)
-
-#define G_MININT32	((gint32) -0x80000000)
-#define G_MAXINT32	((gint32)  0x7fffffff)
-#define G_MAXUINT32	((guint32) 0xffffffff)
-
-#define G_MININT64	((gint64) G_GINT64_CONSTANT(-0x8000000000000000))
-#define G_MAXINT64	G_GINT64_CONSTANT(0x7fffffffffffffff)
-#define G_MAXUINT64	G_GUINT64_CONSTANT(0xffffffffffffffff)
-*/
-typedef void* gpointer;
-typedef const void *gconstpointer;
-
-// from <glib-2.0/glib/gslist.h>
-
-typedef struct _GSList GSList;
-
-struct _GSList
-{
-    gpointer data;
-    GSList *next;
-};
 
 
 // from <epan/register.h>
@@ -100,13 +35,6 @@ typedef enum {
 // #define RA_BASE_COUNT (RA_INTERFACES - 3) // RA_EXTCAP, RA_LUA_PLUGINS, RA_LUA_DEREGISTER
 
 typedef void (*register_cb)(register_action_e action, const char *message, gpointer client_data);
-
-// From <wsutil/nstime.h>
-
-typedef struct {
-	time_t	secs;
-	int	nsecs;
-} nstime_t;
 
 // From <epan/frame_data.h>
 
