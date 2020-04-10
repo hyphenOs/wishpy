@@ -1500,9 +1500,9 @@ typedef enum {
     OPEN_INFO_HEURISTIC = 1
 } wtap_open_type;
 
- void init_open_routines(void);
+void init_open_routines(void);
 
-void cleanup_open_routines(void);
+// void cleanup_open_routines(void);
 
 struct open_info {
     const char *name;
@@ -1512,7 +1512,8 @@ struct open_info {
     gchar **extensions_set; /* populated using extensions member during initialization */
     void* wslua_data; /* should be NULL for C-code file readers */
 };
- struct open_info *open_routines;
+
+struct open_info *open_routines;
 
 /*
  * Types of comments.
