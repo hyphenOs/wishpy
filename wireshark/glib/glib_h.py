@@ -1,6 +1,6 @@
 
 
-glib_cdef = """
+glib_h_cdef = """
 
 // From </usr/lib/x86_64-gnu-linux/gconfig.h>
 

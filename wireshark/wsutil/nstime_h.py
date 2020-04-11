@@ -1,5 +1,4 @@
-
-nstime_h_cdef = """
+wsutil_nstime_h_cdef = """
 
 // stuff from C standard library without having to do lot of including
 typedef long int time_t; // Taken from /usr/include/x86_64

@@ -1,7 +1,7 @@
 # Driver for our wtap
 
 from wireshark.wtap.wtap import wtap_ffi
-
+from wireshark.epan.epan import epan_ffi
 
 if __name__ == '__main__':
     wtap_lib = wtap_ffi.verify('''
@@ -14,4 +14,13 @@ if __name__ == '__main__':
             '-I/usr/include/glib-2.0',
             '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include'])
 
-    print(dir(wtap_lib))
+    epan_lib = epan_ffi.verify('''
+            #include <wireshark/config.h>
+            #include <wireshark/epan/epan.h>
+
+        ''',
+        libraries=['glib-2.0', 'wireshark', 'wsutil'],
+        extra_compile_args=['-I/usr/include/wireshark',
+            '-I/usr/include/glib-2.0',
+            '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include'])
+
