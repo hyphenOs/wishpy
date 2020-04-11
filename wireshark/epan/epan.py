@@ -15,8 +15,8 @@ from ..wsutil.inet_addr_h import wsutil_inet_addr_h_cdef
 from ..wsutil.plugins_h import wsutil_plugins_h_cdef
 from ..wsutil.colors_h import wsutil_colors_h_cdef
 
-from ..wtap.wtap_h import wtap_h_cdef
-from ..wtap.wtap_opttypes_h import wtap_opttypes_h_cdef
+from ..wtap.wtap_h import wtap_h_types_cdef
+from ..wtap.wtap_opttypes_h import wtap_opttypes_h_types_cdef
 
 from .epan_h import epan_h_cdef
 from .register_h import epan_register_h_cdef
@@ -31,7 +31,7 @@ epan_ffi.cdef(garray_h_cdef)
 epan_ffi.cdef(glist_h_cdef)
 epan_ffi.cdef(glib_gstring_h_types_cdef)
 
-epan_ffi.cdef(nstime_h_cdef)
+epan_ffi.cdef(wsutil_nstime_h_cdef)
 epan_ffi.cdef(wsutil_buffer_h_cdef)
 epan_ffi.cdef(wsutil_inet_ipv4_h_cdef)
 epan_ffi.cdef(wsutil_inet_ipv6_h_cdef)
@@ -39,8 +39,8 @@ epan_ffi.cdef(wsutil_inet_addr_h_cdef)
 epan_ffi.cdef(wsutil_plugins_h_cdef)
 epan_ffi.cdef(wsutil_colors_h_cdef)
 
-epan_ffi.cdef(wtap_opttypes_h_cdef)
-epan_ffi.cdef(wtap_h_cdef)
+epan_ffi.cdef(wtap_opttypes_h_types_cdef)
+epan_ffi.cdef(wtap_h_types_cdef)
 
 epan_ffi.cdef(framedata_h_cdef)
 epan_ffi.cdef(epan_register_h_cdef)

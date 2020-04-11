@@ -1,4 +1,4 @@
-wtap_h_cdef = """
+wtap_h_types_cdef = """
 
 /* wtap.h
  *
@@ -1566,6 +1566,113 @@ struct file_type_subtype_info {
 
 #define WTAP_TYPE_AUTO 0
 
+typedef struct {
+	void (*register_wtap_module)(void);  /* routine to call to register a wiretap module */
+} wtap_plugin;
+
+
+/**
+ * Wiretap error codes.
+ */
+#define WTAP_ERR_NOT_REGULAR_FILE              -1
+    /** The file being opened for reading isn't a plain file (or pipe) */
+
+#define WTAP_ERR_RANDOM_OPEN_PIPE              -2
+    /** The file is being opened for random access and it's a pipe */
+
+#define WTAP_ERR_FILE_UNKNOWN_FORMAT           -3
+    /** The file being opened is not a capture file in a known format */
+
+#define WTAP_ERR_UNSUPPORTED                   -4
+    /** Supported file type, but there's something in the file we
+       can't support */
+
+#define WTAP_ERR_CANT_WRITE_TO_PIPE            -5
+    /** Wiretap can't save to a pipe in the specified format */
+
+#define WTAP_ERR_CANT_OPEN                     -6
+    /** The file couldn't be opened, reason unknown */
+
+#define WTAP_ERR_UNWRITABLE_FILE_TYPE          -7
+    /** Wiretap can't save files in the specified format */
+
+#define WTAP_ERR_UNWRITABLE_ENCAP              -8
+    /** Wiretap can't read or save files in the specified format with the
+       specified encapsulation */
+
+#define WTAP_ERR_ENCAP_PER_PACKET_UNSUPPORTED  -9
+    /** The specified format doesn't support per-packet encapsulations */
+
+#define WTAP_ERR_CANT_WRITE                   -10
+    /** An attempt to read failed, reason unknown */
+
+#define WTAP_ERR_CANT_CLOSE                   -11
+    /** The file couldn't be closed, reason unknown */
+
+#define WTAP_ERR_SHORT_READ                   -12
+    /** An attempt to read read less data than it should have */
+
+#define WTAP_ERR_BAD_FILE                     -13
+    /** The file appears to be damaged or corrupted or otherwise bogus */
+
+#define WTAP_ERR_SHORT_WRITE                  -14
+    /** An attempt to write wrote less data than it should have */
+
+#define WTAP_ERR_UNC_OVERFLOW                 -15
+    /** Uncompressing Sniffer data would overflow buffer */
+
+#define WTAP_ERR_RANDOM_OPEN_STDIN            -16
+    /** We're trying to open the standard input for random access */
+
+#define WTAP_ERR_COMPRESSION_NOT_SUPPORTED    -17
+    /* The filetype doesn't support output compression */
+
+#define WTAP_ERR_CANT_SEEK                    -18
+    /** An attempt to seek failed, reason unknown */
+
+#define WTAP_ERR_CANT_SEEK_COMPRESSED         -19
+    /** An attempt to seek on a compressed stream */
+
+#define WTAP_ERR_DECOMPRESS                   -20
+    /** Error decompressing */
+
+#define WTAP_ERR_INTERNAL                     -21
+    /** "Shouldn't happen" internal errors */
+
+#define WTAP_ERR_PACKET_TOO_LARGE             -22
+    /** Packet being written is larger than we support; do not use when
+        reading, use WTAP_ERR_BAD_FILE instead */
+
+#define WTAP_ERR_CHECK_WSLUA                  -23
+    /** Not really an error: the file type being checked is from a Lua
+        plugin, so that the code will call wslua_can_write_encap() instead if it gets this */
+
+#define WTAP_ERR_UNWRITABLE_REC_TYPE          -24
+    /** Specified record type can't be written to that file type */
+
+#define WTAP_ERR_UNWRITABLE_REC_DATA          -25
+    /** Something in the record data can't be written to that file type */
+
+#define WTAP_ERR_DECOMPRESSION_NOT_SUPPORTED  -26
+    /** We don't support decompressing that type of compressed file */
+
+/*
+ * Editor modelines  -  http://www.wireshark.org/tools/modelines.html
+ *
+ * Local variables:
+ * c-basic-offset: 4
+ * tab-width: 8
+ * indent-tabs-mode: nil
+ * End:
+ *
+ * vi: set shiftwidth=4 tabstop=8 expandtab:
+ * :indentSize=4:tabSize=8:noTabs=true:
+ */
+
+"""
+
+wtap_h_funcs_cdef = """
+
 /**
  * @brief Initialize the Wiretap library.
  *
@@ -2021,13 +2128,8 @@ GSList *wtap_get_file_extension_type_extensions(guint extension_type);
 
 void wtap_register_file_type_extension(const struct file_extension_info *ei);
 
-typedef struct {
-	void (*register_wtap_module)(void);  /* routine to call to register a wiretap module */
-} wtap_plugin;
-
 
 void wtap_register_plugin(const wtap_plugin *plug);
-
 
 void wtap_register_open_info(struct open_info *oi, const gboolean first_routine);
 
@@ -2048,103 +2150,5 @@ int wtap_register_encap_type(const char* name, const char* short_name);
 /*** Cleanup the interal library structures */
 
 void wtap_cleanup(void);
+"""
 
-/**
- * Wiretap error codes.
- */
-#define WTAP_ERR_NOT_REGULAR_FILE              -1
-    /** The file being opened for reading isn't a plain file (or pipe) */
-
-#define WTAP_ERR_RANDOM_OPEN_PIPE              -2
-    /** The file is being opened for random access and it's a pipe */
-
-#define WTAP_ERR_FILE_UNKNOWN_FORMAT           -3
-    /** The file being opened is not a capture file in a known format */
-
-#define WTAP_ERR_UNSUPPORTED                   -4
-    /** Supported file type, but there's something in the file we
-       can't support */
-
-#define WTAP_ERR_CANT_WRITE_TO_PIPE            -5
-    /** Wiretap can't save to a pipe in the specified format */
-
-#define WTAP_ERR_CANT_OPEN                     -6
-    /** The file couldn't be opened, reason unknown */
-
-#define WTAP_ERR_UNWRITABLE_FILE_TYPE          -7
-    /** Wiretap can't save files in the specified format */
-
-#define WTAP_ERR_UNWRITABLE_ENCAP              -8
-    /** Wiretap can't read or save files in the specified format with the
-       specified encapsulation */
-
-#define WTAP_ERR_ENCAP_PER_PACKET_UNSUPPORTED  -9
-    /** The specified format doesn't support per-packet encapsulations */
-
-#define WTAP_ERR_CANT_WRITE                   -10
-    /** An attempt to read failed, reason unknown */
-
-#define WTAP_ERR_CANT_CLOSE                   -11
-    /** The file couldn't be closed, reason unknown */
-
-#define WTAP_ERR_SHORT_READ                   -12
-    /** An attempt to read read less data than it should have */
-
-#define WTAP_ERR_BAD_FILE                     -13
-    /** The file appears to be damaged or corrupted or otherwise bogus */
-
-#define WTAP_ERR_SHORT_WRITE                  -14
-    /** An attempt to write wrote less data than it should have */
-
-#define WTAP_ERR_UNC_OVERFLOW                 -15
-    /** Uncompressing Sniffer data would overflow buffer */
-
-#define WTAP_ERR_RANDOM_OPEN_STDIN            -16
-    /** We're trying to open the standard input for random access */
-
-#define WTAP_ERR_COMPRESSION_NOT_SUPPORTED    -17
-    /* The filetype doesn't support output compression */
-
-#define WTAP_ERR_CANT_SEEK                    -18
-    /** An attempt to seek failed, reason unknown */
-
-#define WTAP_ERR_CANT_SEEK_COMPRESSED         -19
-    /** An attempt to seek on a compressed stream */
-
-#define WTAP_ERR_DECOMPRESS                   -20
-    /** Error decompressing */
-
-#define WTAP_ERR_INTERNAL                     -21
-    /** "Shouldn't happen" internal errors */
-
-#define WTAP_ERR_PACKET_TOO_LARGE             -22
-    /** Packet being written is larger than we support; do not use when
-        reading, use WTAP_ERR_BAD_FILE instead */
-
-#define WTAP_ERR_CHECK_WSLUA                  -23
-    /** Not really an error: the file type being checked is from a Lua
-        plugin, so that the code will call wslua_can_write_encap() instead if it gets this */
-
-#define WTAP_ERR_UNWRITABLE_REC_TYPE          -24
-    /** Specified record type can't be written to that file type */
-
-#define WTAP_ERR_UNWRITABLE_REC_DATA          -25
-    /** Something in the record data can't be written to that file type */
-
-#define WTAP_ERR_DECOMPRESSION_NOT_SUPPORTED  -26
-    /** We don't support decompressing that type of compressed file */
-
-/*
- * Editor modelines  -  http://www.wireshark.org/tools/modelines.html
- *
- * Local variables:
- * c-basic-offset: 4
- * tab-width: 8
- * indent-tabs-mode: nil
- * End:
- *
- * vi: set shiftwidth=4 tabstop=8 expandtab:
- * :indentSize=4:tabSize=8:noTabs=true:
- */
-
- """

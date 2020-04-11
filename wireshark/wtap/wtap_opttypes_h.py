@@ -1,6 +1,6 @@
 # Types from wireshark/wtap/wtap_opttypes.h
 
-wtap_opttypes_h_cdef = """
+wtap_opttypes_h_types_cdef = """
 
 /* wtap_opttypes.h
  *
@@ -180,13 +180,17 @@ typedef void (*wtap_block_create_func)(wtap_block_t block);
 typedef void (*wtap_mand_free_func)(wtap_block_t block);
 typedef void (*wtap_mand_copy_func)(wtap_block_t dest_block, wtap_block_t src_block);
 
+typedef void (*wtap_block_foreach_func)(wtap_block_t block, guint option_id, wtap_opttype_e option_type, wtap_optval_t *option, void *user_data);
+"""
+
+wtap_opttypes_h_funcs_cdef = """
 /** Initialize block types.
  *
  * This is currently just a placeholder as nothing needs to be
  * initialized yet.  Should handle "registration" when code is
  * refactored to do so.
  */
- void wtap_opttypes_initialize(void);
+extern void wtap_opttypes_initialize(void);
 
 /** Create a block by type
  *
@@ -195,7 +199,7 @@ typedef void (*wtap_mand_copy_func)(wtap_block_t dest_block, wtap_block_t src_bl
  * @param[in] block_type Block type to be created
  * @return Newly allocated block
  */
- wtap_block_t wtap_block_create(wtap_block_type_t block_type);
+extern wtap_block_t wtap_block_create(wtap_block_type_t block_type);
 
 /** Free a block
  *
@@ -203,7 +207,7 @@ typedef void (*wtap_mand_copy_func)(wtap_block_t dest_block, wtap_block_t src_bl
  *
  * @param[in] block Block to be freed
  */
- void wtap_block_free(wtap_block_t block);
+extern void wtap_block_free(wtap_block_t block);
 
 /** Free an array of blocks
  *
@@ -213,14 +217,14 @@ typedef void (*wtap_mand_copy_func)(wtap_block_t dest_block, wtap_block_t src_bl
  *
  * @param[in] block_array Array of blocks to be freed
  */
- void wtap_block_array_free(GArray* block_array);
+extern void wtap_block_array_free(GArray* block_array);
 
 /** Provide mandatory data of a block
  *
  * @param[in] block Block from which to retrieve mandatory data
  * @return Block mandatory data.  Structure varies based on block type
  */
- void* wtap_block_get_mandatory_data(wtap_block_t block);
+extern void* wtap_block_get_mandatory_data(wtap_block_t block);
 
 /** Add UINT8 option value to a block
  *
@@ -230,7 +234,7 @@ typedef void (*wtap_mand_copy_func)(wtap_block_t dest_block, wtap_block_t src_bl
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_add_uint8_option(wtap_block_t block, guint option_id, guint8 value);
 
 /** Set UINT8 option value in a block
@@ -241,7 +245,7 @@ wtap_block_add_uint8_option(wtap_block_t block, guint option_id, guint8 value);
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_uint8_option_value(wtap_block_t block, guint option_id, guint8 value);
 
 /** Get UINT8 option value from a block
@@ -252,7 +256,7 @@ wtap_block_set_uint8_option_value(wtap_block_t block, guint option_id, guint8 va
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_get_uint8_option_value(wtap_block_t block, guint option_id, guint8* value) ;
 
 /** Add UINT64 option value to a block
@@ -263,7 +267,7 @@ wtap_block_get_uint8_option_value(wtap_block_t block, guint option_id, guint8* v
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_add_uint64_option(wtap_block_t block, guint option_id, guint64 value);
 
 /** Set UINT64 option value in a block
@@ -274,7 +278,7 @@ wtap_block_add_uint64_option(wtap_block_t block, guint option_id, guint64 value)
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_uint64_option_value(wtap_block_t block, guint option_id, guint64 value);
 
 /** Get UINT64 option value from a block
@@ -285,7 +289,7 @@ wtap_block_set_uint64_option_value(wtap_block_t block, guint option_id, guint64 
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_get_uint64_option_value(wtap_block_t block, guint option_id, guint64* value) ;
 
 /** Add IPv4 address option value to a block
@@ -296,7 +300,7 @@ wtap_block_get_uint64_option_value(wtap_block_t block, guint option_id, guint64*
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_add_ipv4_option(wtap_block_t block, guint option_id, guint32 value);
 
 /** Set IPv4 option value in a block
@@ -307,7 +311,7 @@ wtap_block_add_ipv4_option(wtap_block_t block, guint option_id, guint32 value);
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_ipv4_option_value(wtap_block_t block, guint option_id, guint32 value);
 
 /** Get IPv4 option value from a block
@@ -318,7 +322,7 @@ wtap_block_set_ipv4_option_value(wtap_block_t block, guint option_id, guint32 va
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_get_ipv4_option_value(wtap_block_t block, guint option_id, guint32* value) ;
 
 /** Add IPv6 address option value to a block
@@ -329,7 +333,7 @@ wtap_block_get_ipv4_option_value(wtap_block_t block, guint option_id, guint32* v
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_add_ipv6_option(wtap_block_t block, guint option_id, ws_in6_addr *value);
 
 /** Set IPv6 option value in a block
@@ -340,7 +344,7 @@ wtap_block_add_ipv6_option(wtap_block_t block, guint option_id, ws_in6_addr *val
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_ipv6_option_value(wtap_block_t block, guint option_id, ws_in6_addr *value);
 
 /** Get IPv6 option value from a block
@@ -351,7 +355,7 @@ wtap_block_set_ipv6_option_value(wtap_block_t block, guint option_id, ws_in6_add
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_get_ipv6_option_value(wtap_block_t block, guint option_id, ws_in6_addr* value) ;
 
 /** Add a string option to a block
@@ -363,7 +367,7 @@ wtap_block_get_ipv6_option_value(wtap_block_t block, guint option_id, ws_in6_add
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_add_string_option(wtap_block_t block, guint option_id, const char *value, gsize value_length);
 
 /** Add a string option to a block witha printf-formatted string as its value
@@ -374,7 +378,7 @@ wtap_block_add_string_option(wtap_block_t block, guint option_id, const char *va
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_add_string_option_format(wtap_block_t block, guint option_id, const char *format, ...);
 
 /** Set string option value in a block
@@ -386,7 +390,7 @@ wtap_block_add_string_option_format(wtap_block_t block, guint option_id, const c
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_string_option_value(wtap_block_t block, guint option_id, const char* value, gsize value_length);
 
 /** Set string option value for nth instance of a particular option in a block
@@ -399,7 +403,7 @@ wtap_block_set_string_option_value(wtap_block_t block, guint option_id, const ch
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_nth_string_option_value(wtap_block_t block, guint option_id, guint idx, const char* value, gsize value_length);
 
 /** Set string option value in a block to a printf-formatted string
@@ -410,7 +414,7 @@ wtap_block_set_nth_string_option_value(wtap_block_t block, guint option_id, guin
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_string_option_value_format(wtap_block_t block, guint option_id, const char *format, ...);
 
 /** Get string option value from a block
@@ -421,7 +425,7 @@ wtap_block_set_string_option_value_format(wtap_block_t block, guint option_id, c
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_get_string_option_value(wtap_block_t block, guint option_id, char** value) ;
 
 /** Get string option value for nth instance of a particular option in a block
@@ -433,7 +437,7 @@ wtap_block_get_string_option_value(wtap_block_t block, guint option_id, char** v
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_get_nth_string_option_value(wtap_block_t block, guint option_id, guint idx, char** value) ;
 
 /** Add a "custom" option value to a block
@@ -445,7 +449,7 @@ wtap_block_get_nth_string_option_value(wtap_block_t block, guint option_id, guin
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_add_custom_option(wtap_block_t block, guint option_id, void* value, size_t value_size);
 
 /** Set a "custom" option value in a block
@@ -456,7 +460,7 @@ wtap_block_add_custom_option(wtap_block_t block, guint option_id, void* value, s
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_set_custom_option_value(wtap_block_t block, guint option_id, void* value);
 
 /** Get a "custom" option value from a block
@@ -467,7 +471,7 @@ wtap_block_set_custom_option_value(wtap_block_t block, guint option_id, void* va
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_get_custom_option_value(wtap_block_t block, guint option_id, void** value) ;
 
 /** Remove an option from a block
@@ -477,7 +481,7 @@ wtap_block_get_custom_option_value(wtap_block_t block, guint option_id, void** v
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_remove_option(wtap_block_t block, guint option_id);
 
 /** Remove the nth instance of an option from a block
@@ -488,7 +492,7 @@ wtap_block_remove_option(wtap_block_t block, guint option_id);
  * @return wtap_opttype_return_val - WTAP_OPTTYPE_SUCCESS if successful,
  * error code otherwise
  */
- wtap_opttype_return_val
+extern wtap_opttype_return_val
 wtap_block_remove_nth_option_instance(wtap_block_t block, guint option_id,
                                       guint idx);
 
@@ -503,7 +507,6 @@ wtap_block_remove_nth_option_instance(wtap_block_t block, guint option_id,
  void wtap_block_copy(wtap_block_t dest_block, wtap_block_t src_block);
 
 
-typedef void (*wtap_block_foreach_func)(wtap_block_t block, guint option_id, wtap_opttype_e option_type, wtap_optval_t *option, void *user_data);
  void wtap_block_foreach_option(wtap_block_t block, wtap_block_foreach_func func, void* user_data);
 
  int wtap_opttype_register_custom_block_type(const char* name, const char* description, wtap_block_create_func create,
