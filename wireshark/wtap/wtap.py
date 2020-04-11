@@ -1,15 +1,17 @@
 from cffi import FFI
-from glib import glib_cdef
-from garray_h import garray_h_cdef
-from glist_h import glist_h_cdef
-from nstime_h import nstime_h_cdef
-from wtap_h import wtap_h_cdef
-from wtap_opttypes_h import wtap_opttypes_h_cdef
 
-from wsutil_buffer_h import wsutil_buffer_h_cdef
-from wsutil_inet_ipv4_h import wsutil_inet_ipv4_h_cdef
-from wsutil_inet_ipv6_h import wsutil_inet_ipv6_h_cdef
-from wsutil_inet_addr_h import wsutil_inet_addr_h_cdef
+from ..glib.glib_h import glib_cdef
+from ..glib.garray_h import garray_h_cdef
+from ..glib.glist_h import glist_h_cdef
+
+from ..wsutil.nstime_h import nstime_h_cdef
+from ..wsutil.buffer_h import wsutil_buffer_h_cdef
+from ..wsutil.inet_ipv4_h import wsutil_inet_ipv4_h_cdef
+from ..wsutil.inet_ipv6_h import wsutil_inet_ipv6_h_cdef
+from ..wsutil.inet_addr_h import wsutil_inet_addr_h_cdef
+
+from .wtap_h import wtap_h_cdef
+from .wtap_opttypes_h import wtap_opttypes_h_cdef
 
 # from ws_symbols_h import ws_symbols_h_cdef
 
