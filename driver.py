@@ -1,5 +1,6 @@
 # Driver for our wtap
 
+
 from wireshark.wtap.wtap import wtap_ffi
 from wireshark.epan.epan import epan_ffi
 
@@ -25,3 +26,6 @@ if __name__ == '__main__':
             '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include'])
 
     print(dir(epan_lib))
+
+    epan_obj = epan_lib.epan_dissect_new(epan_ffi.NULL, True, True)
+    print(epan_obj)
