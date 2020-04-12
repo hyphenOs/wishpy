@@ -5,7 +5,7 @@ from ..glib.garray_h import garray_h_cdef
 from ..glib.glist_h import glist_h_cdef
 from ..glib.gstring_h import glib_gstring_h_types_cdef
 
-from ..wsutil.nstime_h import wsutil_nstime_h_cdef
+from ..wsutil.nstime_h import wsutil_nstime_h_types_cdef
 from ..wsutil.buffer_h import wsutil_buffer_h_cdef
 from ..wsutil.inet_ipv4_h import wsutil_inet_ipv4_h_cdef
 from ..wsutil.inet_ipv6_h import wsutil_inet_ipv6_h_cdef
@@ -13,6 +13,7 @@ from ..wsutil.inet_addr_h import wsutil_inet_addr_h_cdef
 from ..wsutil.plugins_h import wsutil_plugins_h_cdef
 from ..wsutil.colors_h import wsutil_colors_h_cdef
 #from ..wsutil.ws_mempbrh_h import wsutil_ws_mempbrk_h_types_cdef
+from ..wsutil.privileges_h import wsutil_privileges_h_funcs_cdef
 
 
 from ..wtap.wtap_h import wtap_h_types_cdef
@@ -36,13 +37,14 @@ epan_ffi.cdef(garray_h_cdef)
 epan_ffi.cdef(glist_h_cdef)
 epan_ffi.cdef(glib_gstring_h_types_cdef)
 
-epan_ffi.cdef(wsutil_nstime_h_cdef)
+epan_ffi.cdef(wsutil_nstime_h_types_cdef)
 epan_ffi.cdef(wsutil_buffer_h_cdef)
 epan_ffi.cdef(wsutil_inet_ipv4_h_cdef)
 epan_ffi.cdef(wsutil_inet_ipv6_h_cdef)
 epan_ffi.cdef(wsutil_inet_addr_h_cdef)
 epan_ffi.cdef(wsutil_plugins_h_cdef)
 epan_ffi.cdef(wsutil_colors_h_cdef)
+epan_ffi.cdef(wsutil_privileges_h_funcs_cdef)
 
 epan_ffi.cdef(wtap_opttypes_h_types_cdef)
 epan_ffi.cdef(wtap_h_types_cdef)

@@ -4,7 +4,7 @@ from ..glib.glib_h import glib_h_cdef
 from ..glib.garray_h import garray_h_cdef
 from ..glib.glist_h import glist_h_cdef
 
-from ..wsutil.nstime_h import wsutil_nstime_h_cdef
+from ..wsutil.nstime_h import wsutil_nstime_h_types_cdef
 from ..wsutil.buffer_h import wsutil_buffer_h_cdef
 from ..wsutil.inet_ipv4_h import wsutil_inet_ipv4_h_cdef
 from ..wsutil.inet_ipv6_h import wsutil_inet_ipv6_h_cdef
@@ -25,7 +25,7 @@ wtap_ffi.cdef(garray_h_cdef)
 wtap_ffi.cdef(glist_h_cdef)
 
 
-wtap_ffi.cdef(wsutil_nstime_h_cdef)
+wtap_ffi.cdef(wsutil_nstime_h_types_cdef)
 wtap_ffi.cdef(wsutil_buffer_h_cdef)
 wtap_ffi.cdef(wsutil_inet_ipv4_h_cdef)
 wtap_ffi.cdef(wsutil_inet_ipv6_h_cdef)
