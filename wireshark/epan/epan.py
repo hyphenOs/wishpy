@@ -59,3 +59,16 @@ epan_ffi.cdef(epan_wmem_h_types_cdef)
 epan_ffi.cdef(epan_tvbuff_h_types_cdef)
 epan_ffi.cdef(epan_tvbuff_h_funcs_cdef)
 epan_ffi.cdef(epan_h_cdef)
+
+# Go ahead and get the Library handle
+
+epan_lib = epan_ffi.verify('''
+            #include <wireshark/config.h>
+            #include <wireshark/epan/epan.h>
+
+        ''',
+        libraries=['glib-2.0', 'wireshark', 'wsutil'],
+        extra_compile_args=['-I/usr/include/wireshark',
+            '-I/usr/include/glib-2.0',
+            '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include'])
+

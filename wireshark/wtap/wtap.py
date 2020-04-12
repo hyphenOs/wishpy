@@ -38,8 +38,8 @@ wtap_ffi.cdef(wtap_h_types_cdef)
 wtap_ffi.cdef(wtap_h_funcs_cdef)
 
 
-if __name__ == '__main__':
-    wtap_lib = wtap_ffi.verify('''
+#if __name__ == '__main__':
+wtap_lib = wtap_ffi.verify('''
             #include <wireshark/config.h>
             #include <wireshark/wiretap/wtap.h>
 
