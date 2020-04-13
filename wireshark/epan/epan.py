@@ -29,6 +29,9 @@ from .tvbuff_h import epan_tvbuff_h_types_cdef
 from .tvbuff_h import epan_tvbuff_h_funcs_cdef
 from .guid_utils_h import epan_guid_utils_h_types_cdef
 from .wmem_h import epan_wmem_h_types_cdef
+from .packet_h import epan_packet_h_funcs_cdef
+from .address_h import epan_address_h_types_cdef
+from .packet_info_h import epan_packet_info_h_cdef
 
 epan_ffi = FFI()
 
@@ -60,7 +63,10 @@ epan_ffi.cdef(epan_guid_utils_h_types_cdef)
 epan_ffi.cdef(epan_wmem_h_types_cdef)
 epan_ffi.cdef(epan_tvbuff_h_types_cdef)
 epan_ffi.cdef(epan_tvbuff_h_funcs_cdef)
+#epan_ffi.cdef(epan_address_h_types_cdef)
+#epan_ffi.cdef(epan_packet_info_h_cdef)
 epan_ffi.cdef(epan_h_cdef)
+epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
 # Go ahead and get the Library handle
 
