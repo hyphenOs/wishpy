@@ -63,6 +63,8 @@ while True:
         tvb_ptr = epan_lib.tvb_new_real_data(buf_ptr, pkt_len, pkt_reported_len)
         epan_lib.epan_dissect_run(epan_dissect_obj, wtap_file_type, epan_rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
+        print(epan_dissect_obj.tree)
+
         epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
 
         # epan_dissect_rest calls `tvb_free`, no need to call it ourselves

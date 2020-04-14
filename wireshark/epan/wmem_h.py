@@ -4,6 +4,16 @@
 
 epan_wmem_h_types_cdef = """
 
+// From <wireshark/epan/wmem/wmem_list.h>
+
+struct _wmem_list_t;
+struct _wmem_list_frame_t;
+
+typedef struct _wmem_list_t       wmem_list_t;
+typedef struct _wmem_list_frame_t wmem_list_frame_t;
+
+
+
 /* wmem_allocator.h
  * Definitions for the Wireshark Memory Manager Allocator
  * Copyright 2012, Evan Huus <eapache@gmail.com>

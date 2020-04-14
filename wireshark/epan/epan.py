@@ -4,6 +4,7 @@ from ..glib.glib_h import glib_h_cdef
 from ..glib.garray_h import garray_h_cdef
 from ..glib.glist_h import glist_h_cdef
 from ..glib.gstring_h import glib_gstring_h_types_cdef
+from ..glib.ghash_h import glib_ghash_h_types_cdef
 
 from ..wsutil.nstime_h import wsutil_nstime_h_types_cdef
 from ..wsutil.buffer_h import wsutil_buffer_h_cdef
@@ -32,6 +33,10 @@ from .wmem_h import epan_wmem_h_types_cdef
 from .packet_h import epan_packet_h_funcs_cdef
 from .address_h import epan_address_h_types_cdef
 from .packet_info_h import epan_packet_info_h_cdef
+from .epan_dissect_h import epan_epan_dissect_h_types_cdef
+from .proto_h import epan_proto_h_types_cdef
+from .ftypes_h import epan_ftypes_h_types_cdef
+
 
 epan_ffi = FFI()
 
@@ -39,6 +44,7 @@ epan_ffi.cdef(glib_h_cdef)
 epan_ffi.cdef(garray_h_cdef)
 epan_ffi.cdef(glist_h_cdef)
 epan_ffi.cdef(glib_gstring_h_types_cdef)
+epan_ffi.cdef(glib_ghash_h_types_cdef)
 
 epan_ffi.cdef(wsutil_nstime_h_types_cdef)
 epan_ffi.cdef(wsutil_buffer_h_cdef)
@@ -63,8 +69,11 @@ epan_ffi.cdef(epan_guid_utils_h_types_cdef)
 epan_ffi.cdef(epan_wmem_h_types_cdef)
 epan_ffi.cdef(epan_tvbuff_h_types_cdef)
 epan_ffi.cdef(epan_tvbuff_h_funcs_cdef)
-#epan_ffi.cdef(epan_address_h_types_cdef)
-#epan_ffi.cdef(epan_packet_info_h_cdef)
+epan_ffi.cdef(epan_address_h_types_cdef)
+epan_ffi.cdef(epan_packet_info_h_cdef)
+epan_ffi.cdef(epan_ftypes_h_types_cdef)
+epan_ffi.cdef(epan_proto_h_types_cdef)
+epan_ffi.cdef(epan_epan_dissect_h_types_cdef)
 epan_ffi.cdef(epan_h_cdef)
 epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
@@ -72,6 +81,9 @@ epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
 epan_lib = epan_ffi.verify('''
             #include <wireshark/config.h>
+            #include <wireshark/epan/address.h>
+            #include <wireshark/epan/proto.h>
+            #include <wireshark/epan/epan_dissect.h>
             #include <wireshark/epan/epan.h>
 
         ''',

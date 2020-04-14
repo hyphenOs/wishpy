@@ -66,4 +66,6 @@ struct _GSList
     GSList *next;
 };
 
+// from <glib-2.0/glib/gregex.h>
+typedef struct _GRegex		GRegex;
 """
