@@ -45,7 +45,6 @@ wtap_lib = wtap_ffi.verify('''
 
         ''',
         libraries=['glib-2.0', 'wireshark', 'wsutil', 'wiretap'],
-        extra_compile_args=['-I/usr/include/wireshark',
+        extra_compile_args=['-I/usr/local/include/wireshark',
             '-I/usr/include/glib-2.0',
             '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include'])
-

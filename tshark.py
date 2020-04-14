@@ -1,3 +1,7 @@
+import sys
+import time
+from datetime import datetime as dt
+
 from wireshark.wtap.wtap import wtap_ffi, wtap_lib
 from wireshark.epan.epan import epan_ffi, epan_lib
 
@@ -6,7 +10,7 @@ wtap_lib.wtap_init(False)
 # Open a wtap file
 err = wtap_ffi.new('int *')
 err_str = wtap_ffi.new("gchar *[256]")
-filename = "port8080.pcap"
+filename = "/home/gabhijit/Work/MatrixShell/April-10_00001_20180410194045.pcap" #"port8080.pcap"
 open_type = wtap_lib.WTAP_TYPE_AUTO
 open_random = wtap_ffi.cast("gboolean", False)
 wth = wtap_lib.wtap_open_offline(filename.encode(), open_type, err, err_str, open_random)
@@ -21,12 +25,11 @@ epan_init_result = epan_lib.epan_init(
         register_protocols_handle,
         register_handoffs_handle,
         null_register_cb, epan_ffi.NULL)
+epan_lib.epan_load_settings()
 
 empty_packet_provider_funcs = epan_ffi.new('struct packet_provider_funcs *')
 epan_session = epan_lib.epan_new(epan_ffi.NULL, empty_packet_provider_funcs)
-print(epan_session)
 epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
-print(epan_dissect_obj)
 
 offset = wtap_ffi.new('gint64 *')
 frame_data_ref = epan_ffi.new('frame_data **')
@@ -35,6 +38,7 @@ elapsed_time_ptr = epan_ffi.new('nstime_t *')
 frame_data_ref[0] = epan_ffi.NULL
 frame_data_ptr = epan_ffi.new('frame_data *')
 cum_bytes = epan_ffi.new('guint32 *')
+then = dt.now()
 while True:
     result = wtap_lib.wtap_read(wth, err, err_str, offset)
 
@@ -43,7 +47,7 @@ while True:
         buf_ptr = wtap_lib.wtap_get_buf_ptr(wth)
 
         epan_rec = epan_ffi.cast('wtap_rec *', rec)
-        print(rec.rec_type, rec.rec_header.packet_header.len, rec.rec_header.packet_header.caplen)
+        #print(rec.rec_type, rec.rec_header.packet_header.len, rec.rec_header.packet_header.caplen)
         pkt_len = rec.rec_header.packet_header.len
         pkt_reported_len = rec.rec_header.packet_header.caplen
 
@@ -59,9 +63,14 @@ while True:
         tvb_ptr = epan_lib.tvb_new_real_data(buf_ptr, pkt_len, pkt_reported_len)
         epan_lib.epan_dissect_run(epan_dissect_obj, wtap_file_type, epan_rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
-        print("done")
         epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
+
+        # epan_dissect_rest calls `tvb_free`, no need to call it ourselves
         epan_lib.epan_dissect_reset(epan_dissect_obj)
-        epan_lib.tvb_free(tvb_ptr)
+
     else:
         break
+
+now = dt.now()
+
+print(now - then)
