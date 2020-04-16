@@ -7,6 +7,16 @@ from wireshark.wtap.wtap import wtap_ffi, wtap_lib
 from wireshark.epan.epan import epan_ffi, epan_lib
 
 
+@epan_ffi.callback('void(proto_node *, gpointer)')
+def per_node_func(node_ptr, data_ptr):
+    node = node_ptr[0]
+    child = node.first_child
+    print(#epan_ffi.string(node.finfo.rep[0].representation),
+            epan_ffi.string(node.finfo.hfinfo[0].abbrev),
+            node.finfo.hfinfo[0].type)
+    while child != epan_ffi.NULL:
+        print("\t", epan_ffi.string(child.finfo.hfinfo[0].abbrev), child.finfo.hfinfo[0].type)
+        child = child.next
 
 def wtap_open_file_offline(filepath):
     """
@@ -23,7 +33,7 @@ def wtap_open_file_offline(filepath):
     # Open a wtap file
     err = wtap_ffi.new('int *')
     err_str = wtap_ffi.new("gchar *[256]")
-    filename = filepath #"/home/gabhijit/Work/MatrixShell/April-10_00001_20180410194045.pcap" #"port8080.pcap"
+    filename = filepath
     open_type = wtap_lib.WTAP_TYPE_AUTO
     wth = wtap_lib.wtap_open_offline(filename.encode(), open_type, err, err_str, False)
     if wth is wtap_ffi.NULL:
@@ -46,8 +56,10 @@ def epan_lib_init():
 
     epan_lib.init_process_policies()
     null_register_cb = epan_ffi.cast('register_cb', epan_ffi.NULL)
-    register_protocols_handle = epan_ffi.callback('void (*)(register_cb, gpointer)', epan_lib.register_all_protocols)
-    register_handoffs_handle = epan_ffi.callback('void (*)(register_cb, gpointer)', epan_lib.register_all_protocol_handoffs)
+    register_protocols_handle = epan_ffi.callback('void (*)(register_cb, gpointer)',
+            epan_lib.register_all_protocols)
+    register_handoffs_handle = epan_ffi.callback('void (*)(register_cb, gpointer)',
+            epan_lib.register_all_protocol_handoffs)
     result = epan_lib.epan_init(
             register_protocols_handle,
             register_handoffs_handle,
@@ -88,7 +100,6 @@ def epan_perform_dissection(wth, wth_file_type):
             buf_ptr = wtap_lib.wtap_get_buf_ptr(wth)
 
             epan_rec = epan_ffi.cast('wtap_rec *', rec)
-            #print(rec.rec_type, rec.rec_header.packet_header.len, rec.rec_header.packet_header.caplen)
             pkt_len = rec.rec_header.packet_header.len
             pkt_reported_len = rec.rec_header.packet_header.caplen
 
@@ -115,6 +126,8 @@ def epan_perform_dissection(wth, wth_file_type):
                     epan_rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
             # FIXME: Add code that gets our `packet` structure here
+            epan_lib.proto_tree_children_foreach(epan_dissect_obj[0].tree,
+                    per_node_func, epan_ffi.NULL)
 
             # Reset the frame data and dissector object
             epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)

@@ -78,6 +78,10 @@ typedef proto_node proto_tree;
 /** A protocol item element. */
 typedef proto_node proto_item;
 
+//FIXME: Following should really co in `funcs_cdef`
+typedef void (*proto_tree_foreach_func)(proto_node *, gpointer);
+extern void proto_tree_children_foreach(proto_tree *tree,
+    proto_tree_foreach_func func, gpointer data);
 """
 
 _ = """
