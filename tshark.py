@@ -6,17 +6,82 @@ from datetime import datetime as dt
 from wireshark.wtap.wtap import wtap_ffi, wtap_lib
 from wireshark.epan.epan import epan_ffi, epan_lib
 
+hfbases = {
+        epan_lib.BASE_DEC : '{:d}',
+        epan_lib.BASE_HEX : '0x{:x}',
+        epan_lib.BASE_OCT : '{:o}',
+        epan_lib.BASE_DEC_HEX: '{:d}(0x{:x})',
+        epan_lib.BASE_HEX_DEC: '0x{:x}({:d})',
+        epan_lib.BASE_PT_TCP: '{:d}',
+        epan_lib.BASE_PT_UDP: '{:d}'
+
+        }
+def func_not_supported(*args):
+    return "Not Supported"
+
+def get_uinteger(hfinfo, fvalue):
+    try:
+        base_format = hfbases[hfinfo.display]
+    except:
+        return "Not Supported"
+
+    return base_format.format(fvalue.value.uinteger,
+            fvalue.value.uinteger)
+
+
+fvalue_print_map = {
+        epan_lib.FT_NONE: func_not_supported,
+        epan_lib.FT_PROTOCOL: func_not_supported,
+        epan_lib.FT_BOOLEAN: func_not_supported,
+        epan_lib.FT_UINT8: get_uinteger,
+        epan_lib.FT_UINT16: get_uinteger,
+        epan_lib.FT_UINT32: get_uinteger,
+        epan_lib.FT_INT16: func_not_supported,
+        epan_lib.FT_INT32: func_not_supported,
+        epan_lib.FT_ABSOLUTE_TIME: func_not_supported,
+        epan_lib.FT_RELATIVE_TIME: func_not_supported,
+        epan_lib.FT_STRING: func_not_supported,
+        epan_lib.FT_ETHER: func_not_supported,
+        epan_lib.FT_BYTES: func_not_supported,
+        epan_lib.FT_IPv4: func_not_supported,
+        epan_lib.FT_FRAMENUM: func_not_supported,
+        }
+
 
 @epan_ffi.callback('void(proto_node *, gpointer)')
 def per_node_func(node_ptr, data_ptr):
+
+    if data_ptr == epan_ffi.NULL:
+        level = 0
+    else:
+        level = epan_ffi.cast('int *', data_ptr)[0]
+
     node = node_ptr[0]
+    slash_tees = "\t" * (level)
+    finfo = node.finfo
+    hfinfo = finfo.hfinfo[0]
+    print(slash_tees,
+            epan_ffi.string(hfinfo.abbrev),
+            hfinfo.display,
+            #hfinfo.type,
+            #finfo.length,
+            #finfo.start,
+            fvalue_print_map[hfinfo.type](hfinfo, finfo.value))
+
     child = node.first_child
-    print(#epan_ffi.string(node.finfo.rep[0].representation),
-            epan_ffi.string(node.finfo.hfinfo[0].abbrev),
-            node.finfo.hfinfo[0].type)
+    data_ptr_new = epan_ffi.new('int *')
+    data_ptr_new[0] = level + 1
     while child != epan_ffi.NULL:
-        print("\t", epan_ffi.string(child.finfo.hfinfo[0].abbrev), child.finfo.hfinfo[0].type)
+        per_node_func(child, epan_ffi.cast('void *', data_ptr_new))
         child = child.next
+
+    #while child != epan_ffi.NULL:
+    #    print("\t",
+    #            epan_ffi.string(child.finfo.hfinfo[0].abbrev),
+    #            child.finfo.hfinfo[0].type,
+    #            child.finfo.hfinfo[0].display,
+    #            child.finfo.value)
+    #    child = child.next
 
 def wtap_open_file_offline(filepath):
     """

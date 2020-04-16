@@ -1,5 +1,59 @@
 epan_proto_h_types_cdef = """
 
+/*
+ * Note that this enum values are parsed in make-init-lua.pl so make sure
+ * any changes here still makes valid entries in init.lua.
+ */
+typedef enum {
+/* Integral types */
+	BASE_NONE    = 0,   /**< none */
+	BASE_DEC     = 1,   /**< decimal */
+	BASE_HEX     = 2,   /**< hexadecimal */
+	BASE_OCT     = 3,   /**< octal */
+	BASE_DEC_HEX = 4,   /**< decimal (hexadecimal) */
+	BASE_HEX_DEC = 5,   /**< hexadecimal (decimal) */
+	BASE_CUSTOM  = 6,   /**< call custom routine (in ->strings) to format */
+
+/* Float types */
+	BASE_FLOAT   = BASE_NONE, /**< decimal-format float */
+
+/* String types */
+	STR_ASCII    = 0,   /**< shows non-printable ASCII characters as C-style escapes */
+	/* XXX, support for format_text_wsp() ? */
+	STR_UNICODE  = 7,   /**< shows non-printable UNICODE characters as \\uXXXX (XXX for now non-printable characters display depends on UI) */
+
+/* Byte separators */
+	SEP_DOT      = 8,   /**< hexadecimal bytes with a period (.) between each byte */
+	SEP_DASH     = 9,   /**< hexadecimal bytes with a dash (-) between each byte */
+	SEP_COLON    = 10,  /**< hexadecimal bytes with a colon (:) between each byte */
+	SEP_SPACE    = 11,  /**< hexadecimal bytes with a space between each byte */
+
+/* Address types */
+	BASE_NETMASK = 12,  /**< Used for IPv4 address that shouldn't be resolved (like for netmasks) */
+
+/* Port types */
+	BASE_PT_UDP  = 13,  /**< UDP port */
+	BASE_PT_TCP  = 14,  /**< TCP port */
+	BASE_PT_DCCP = 15,  /**< DCCP port */
+	BASE_PT_SCTP = 16,  /**< SCTP port */
+
+/* OUI types */
+	BASE_OUI     = 17   /**< OUI resolution */
+
+} field_display_e;
+
+/* Following constants have to be ORed with a field_display_e when dissector
+ * want to use specials value-string MACROs for a header_field_info */
+#define BASE_RANGE_STRING       0x0100
+#define BASE_EXT_STRING         0x0200
+#define BASE_VAL64_STRING       0x0400
+#define BASE_ALLOW_ZERO         0x0800  /**< Display <none> instead of <MISSING> for zero sized byte array */
+#define BASE_UNIT_STRING        0x1000  /**< Add unit text to the field value */
+#define BASE_NO_DISPLAY_VALUE   0x2000  /**< Just display the field name with no value.  Intended for
+                                             byte arrays or header fields above a subtree */
+#define BASE_PROTOCOL_INFO      0x4000  /**< protocol_t in [FIELDCONVERT].  Internal use only. */
+#define BASE_SPECIAL_VALS    0x8000  /**< field will not display "Unknown" if value_string match is not found */
+
 typedef enum {
     HF_REF_TYPE_NONE,       /**< Field is not referenced */
     HF_REF_TYPE_INDIRECT,   /**< Field is indirectly referenced (only applicable for FT_PROTOCOL) via. its child */
@@ -627,62 +681,6 @@ void proto_report_dissector_bug(const char *format, ...)
 
 /** FIELD_DISPLAY_E_MASK selects the field_display_e value. */
 #define FIELD_DISPLAY_E_MASK 0xFF
-
-/*
- * Note that this enum values are parsed in make-init-lua.pl so make sure
- * any changes here still makes valid entries in init.lua.
- */
-typedef enum {
-/* Integral types */
-	BASE_NONE    = 0,   /**< none */
-	BASE_DEC     = 1,   /**< decimal */
-	BASE_HEX     = 2,   /**< hexadecimal */
-	BASE_OCT     = 3,   /**< octal */
-	BASE_DEC_HEX = 4,   /**< decimal (hexadecimal) */
-	BASE_HEX_DEC = 5,   /**< hexadecimal (decimal) */
-	BASE_CUSTOM  = 6,   /**< call custom routine (in ->strings) to format */
-
-/* Float types */
-	BASE_FLOAT   = BASE_NONE, /**< decimal-format float */
-
-/* String types */
-	STR_ASCII    = 0,   /**< shows non-printable ASCII characters as C-style escapes */
-	/* XXX, support for format_text_wsp() ? */
-	STR_UNICODE  = 7,   /**< shows non-printable UNICODE characters as \\uXXXX (XXX for now non-printable characters display depends on UI) */
-
-/* Byte separators */
-	SEP_DOT      = 8,   /**< hexadecimal bytes with a period (.) between each byte */
-	SEP_DASH     = 9,   /**< hexadecimal bytes with a dash (-) between each byte */
-	SEP_COLON    = 10,  /**< hexadecimal bytes with a colon (:) between each byte */
-	SEP_SPACE    = 11,  /**< hexadecimal bytes with a space between each byte */
-
-/* Address types */
-	BASE_NETMASK = 12,  /**< Used for IPv4 address that shouldn't be resolved (like for netmasks) */
-
-/* Port types */
-	BASE_PT_UDP  = 13,  /**< UDP port */
-	BASE_PT_TCP  = 14,  /**< TCP port */
-	BASE_PT_DCCP = 15,  /**< DCCP port */
-	BASE_PT_SCTP = 16,  /**< SCTP port */
-
-/* OUI types */
-	BASE_OUI     = 17   /**< OUI resolution */
-
-} field_display_e;
-
-#define FIELD_DISPLAY(d) ((d) & FIELD_DISPLAY_E_MASK)
-
-/* Following constants have to be ORed with a field_display_e when dissector
- * want to use specials value-string MACROs for a header_field_info */
-#define BASE_RANGE_STRING       0x0100
-#define BASE_EXT_STRING         0x0200
-#define BASE_VAL64_STRING       0x0400
-#define BASE_ALLOW_ZERO         0x0800  /**< Display <none> instead of <MISSING> for zero sized byte array */
-#define BASE_UNIT_STRING        0x1000  /**< Add unit text to the field value */
-#define BASE_NO_DISPLAY_VALUE   0x2000  /**< Just display the field name with no value.  Intended for
-                                             byte arrays or header fields above a subtree */
-#define BASE_PROTOCOL_INFO      0x4000  /**< protocol_t in [FIELDCONVERT].  Internal use only. */
-#define BASE_SPECIAL_VALS    0x8000  /**< field will not display "Unknown" if value_string match is not found */
 
 /** BASE_ values that cause the field value to be displayed twice */
 #define IS_BASE_DUAL(b) ((b)==BASE_DEC_HEX||(b)==BASE_HEX_DEC)
