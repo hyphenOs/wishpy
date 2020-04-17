@@ -4,3 +4,6 @@ venv/**
 **/core
 **/*pcap*
 err
+dist
+build
+*egg*
