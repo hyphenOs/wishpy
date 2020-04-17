@@ -3,8 +3,9 @@ import sys
 import time
 from datetime import datetime as dt
 
-from wireshark.wtap.wtap import wtap_ffi, wtap_lib
-from wireshark.epan.epan import epan_ffi, epan_lib
+from wspy.wireshark.wtap.wtap import wtap_ffi, wtap_lib
+from wspy.wireshark.epan.epan import epan_ffi, epan_lib
+
 
 hfbases = {
         epan_lib.BASE_DEC : '{:d}',
