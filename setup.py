@@ -9,9 +9,11 @@ setup(name='wspy',
         author='Abhijit Gadgil',
         author_email='gabhijit@iitbombay.org',
         license_files=['LICENSE', 'COPYING', 'COPYING-wireshark'],
+        setup_requires=['cffi>=1.14.0'],
         ext_modules=[
             epan_src.epan_ffi.distutils_extension(),
             wtap_src.wtap_ffi.distutils_extension(),
             ],
-        packages=find_packages())
+        packages=find_packages(exclude=('wspy.wireshark.lib',)),
+        scripts=['examples/tshark.py'])
 
