@@ -38,13 +38,17 @@ wtap_ffi.cdef(wtap_h_types_cdef)
 wtap_ffi.cdef(wtap_h_funcs_cdef)
 
 
-#if __name__ == '__main__':
-wtap_lib = wtap_ffi.verify('''
-            #include <wireshark/config.h>
-            #include <wireshark/wiretap/wtap.h>
+_sources = '''
+        #include <wireshark/config.h>
+        #include <wireshark/wiretap/wtap.h>
+'''
 
-        ''',
-        libraries=['glib-2.0', 'wireshark', 'wsutil', 'wiretap'],
-        extra_compile_args=['-I/usr/local/include/wireshark',
-            '-I/usr/include/glib-2.0',
-            '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include'])
+_libraries = ['glib-2.0', 'wireshark', 'wsutil', 'wiretap']
+_extra_compile_args = ['-I/usr/local/include/wireshark',
+        '-I/usr/include/glib-2.0',
+        '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include']
+
+wtap_ffi.set_source('wspy.wireshark.lib.wtap_ext',
+        _sources,
+        libraries=_libraries,
+        extra_compile_args=_extra_compile_args)
