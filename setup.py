@@ -1,8 +1,5 @@
 from setuptools import setup, find_packages
 
-import wspy.wireshark.src.epan.epan as epan_src
-import wspy.wireshark.src.wtap.wtap as wtap_src
-
 setup(name='wspy',
         version='0.0.1',
         description='Python Bindings for Wireshark using CFFI',
@@ -10,9 +7,10 @@ setup(name='wspy',
         author_email='gabhijit@iitbombay.org',
         license_files=['LICENSE', 'COPYING', 'COPYING-wireshark'],
         setup_requires=['cffi>=1.14.0'],
-        ext_modules=[
-            epan_src.epan_ffi.distutils_extension(),
-            wtap_src.wtap_ffi.distutils_extension(),
+        install_requires=['cffi>=1.14.0'],
+        cffi_modules=[
+            'wspy/wireshark/src/epan/epan_builder.py:epan_ffi',
+            'wspy/wireshark/src/wtap/wtap_builder.py:wtap_ffi',
             ],
         packages=find_packages(exclude=('wspy.wireshark.lib',)),
         scripts=['examples/tshark.py'])
