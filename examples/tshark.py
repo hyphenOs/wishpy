@@ -1,6 +1,8 @@
 import os
 import sys
 import time
+import struct
+import socket
 from datetime import datetime as dt
 
 from wspy.wireshark.lib.epan_ext import lib as epan_lib
@@ -8,47 +10,119 @@ from wspy.wireshark.lib.epan_ext import ffi as epan_ffi
 
 from wspy.wireshark.lib.wtap_ext import lib as wtap_lib
 from wspy.wireshark.lib.wtap_ext import ffi as wtap_ffi
+
 hfbases = {
+        epan_lib.BASE_NONE : '{:d}', # Not sure how this is to be treated
         epan_lib.BASE_DEC : '{:d}',
         epan_lib.BASE_HEX : '0x{:x}',
         epan_lib.BASE_OCT : '{:o}',
         epan_lib.BASE_DEC_HEX: '{:d}(0x{:x})',
         epan_lib.BASE_HEX_DEC: '0x{:x}({:d})',
         epan_lib.BASE_PT_TCP: '{:d}',
-        epan_lib.BASE_PT_UDP: '{:d}'
+        epan_lib.BASE_PT_UDP: '{:d}',
+        epan_lib.BASE_PT_SCTP: '{:d}'
 
         }
 def func_not_supported(*args):
     return "Not Supported"
 
-def get_uinteger(hfinfo, fvalue):
+def epan_str_to_str(fvalue, ftype, display):
+
+    value = fvalue.value.string
+    return epan_ffi.string(value)
+
+def epan_ipv4_to_str(fvalue, ftype, display):
+
+    ipv4 = fvalue.value.ipv4
+
+    return socket.inet_ntoa(struct.pack('!I', ipv4.addr)).encode()
+
+def epan_bool_to_str(fvalue, ftype, display, on_off=False, json_compat=True):
+
+    if on_off and json_compat:
+        raise ValueError("Specify Either on_off or json_compat not both.")
+
+    value = bool(fvalue.value.uinteger)
+
+    if value:
+        if json_compat:
+            return "true"
+        if on_off:
+            return "ON"
+    else:
+        if json_compat:
+            return "false"
+        if on_off:
+            return "OFF"
+
+    return "{}".format(value)
+
+
+def epan_int_to_str(fvalue, ftype, display):
+
     try:
-        base_format = hfbases[hfinfo.display]
+        base_format = hfbases[display]
     except:
-        return "Not Supported"
+        return "type: {} display: {} Not Supported".format(ftype, display)
 
     return base_format.format(fvalue.value.uinteger,
             fvalue.value.uinteger)
 
+def value_to_str(finfo):
+    """
+    Returns string representation of the `finfo.value`
+    """
 
-fvalue_print_map = {
-        epan_lib.FT_NONE: func_not_supported,
-        epan_lib.FT_PROTOCOL: func_not_supported,
-        epan_lib.FT_BOOLEAN: func_not_supported,
-        epan_lib.FT_UINT8: get_uinteger,
-        epan_lib.FT_UINT16: get_uinteger,
-        epan_lib.FT_UINT32: get_uinteger,
-        epan_lib.FT_INT16: func_not_supported,
-        epan_lib.FT_INT32: func_not_supported,
-        epan_lib.FT_ABSOLUTE_TIME: func_not_supported,
-        epan_lib.FT_RELATIVE_TIME: func_not_supported,
-        epan_lib.FT_STRING: func_not_supported,
-        epan_lib.FT_ETHER: func_not_supported,
-        epan_lib.FT_BYTES: func_not_supported,
-        epan_lib.FT_IPv4: func_not_supported,
-        epan_lib.FT_FRAMENUM: func_not_supported,
-        }
+    fvalue = finfo.value
+    ftype = finfo.hfinfo[0].type
+    display = finfo.hfinfo[0].display
 
+    epan_int_types = [
+            epan_lib.FT_INT8,
+            epan_lib.FT_INT16,
+            epan_lib.FT_INT32,
+            epan_lib.FT_INT40,
+            epan_lib.FT_INT48,
+            epan_lib.FT_INT56,
+            epan_lib.FT_INT64]
+
+    epan_uint32_types = [
+            epan_lib.FT_CHAR,
+            epan_lib.FT_UINT8,
+            epan_lib.FT_UINT16,
+            epan_lib.FT_UINT32,
+            epan_lib.FT_FRAMENUM]
+
+    epan_uint_types = epan_uint32_types + \
+            [ epan_lib.FT_UINT40, epan_lib.FT_UINT48,
+            epan_lib.FT_UINT56, epan_lib.FT_UINT64]
+
+    epan_all_int_types = epan_int_types + epan_uint_types
+
+    if ftype in epan_all_int_types:
+        return epan_int_to_str(fvalue, ftype, display)
+
+    if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
+        return ""
+
+    if ftype == epan_lib.FT_BOOLEAN:
+        return epan_bool_to_str(fvalue, ftype, display)
+
+    if ftype == epan_lib.FT_STRING:
+        return epan_str_to_str(fvalue, ftype, display)
+
+    if ftype == epan_lib.FT_IPv4:
+        return epan_ipv4_to_str(fvalue, ftype, display)
+
+    return "{} {}".format(ftype, display)
+
+def print_finfo(level, finfo):
+
+    hfinfo = finfo.hfinfo[0]
+    abbrev = epan_ffi.string(hfinfo.abbrev)
+    slashtees = "\t" * level
+
+    print(slashtees, abbrev, value_to_str(finfo))
 
 @epan_ffi.callback('void(proto_node *, gpointer)')
 def per_node_func(node_ptr, data_ptr):
@@ -59,16 +133,8 @@ def per_node_func(node_ptr, data_ptr):
         level = epan_ffi.cast('int *', data_ptr)[0]
 
     node = node_ptr[0]
-    slash_tees = "\t" * (level)
     finfo = node.finfo
-    hfinfo = finfo.hfinfo[0]
-    print(slash_tees,
-            epan_ffi.string(hfinfo.abbrev),
-            hfinfo.display,
-            #hfinfo.type,
-            #finfo.length,
-            #finfo.start,
-            fvalue_print_map[hfinfo.type](hfinfo, finfo.value))
+    print_finfo(level, finfo)
 
     child = node.first_child
     data_ptr_new = epan_ffi.new('int *')
@@ -76,14 +142,6 @@ def per_node_func(node_ptr, data_ptr):
     while child != epan_ffi.NULL:
         per_node_func(child, epan_ffi.cast('void *', data_ptr_new))
         child = child.next
-
-    #while child != epan_ffi.NULL:
-    #    print("\t",
-    #            epan_ffi.string(child.finfo.hfinfo[0].abbrev),
-    #            child.finfo.hfinfo[0].type,
-    #            child.finfo.hfinfo[0].display,
-    #            child.finfo.value)
-    #    child = child.next
 
 def wtap_open_file_offline(filepath):
     """
