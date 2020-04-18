@@ -7,3 +7,4 @@ err
 dist
 build
 *egg*
+**/*so

@@ -79,7 +79,7 @@ epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
 # Go ahead and get the Library handle
 
-_source = '''
+_sources = '''
             #include <wireshark/config.h>
             #include <wireshark/epan/address.h>
             #include <wireshark/epan/proto.h>
@@ -92,10 +92,10 @@ _extra_compile_args = ['-I/usr/local/include/wireshark',
             '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include',
             '-L/usr/local/lib']
 
-epan_lib = epan_ffi.verify(_source,
+epan_lib = epan_ffi.verify(_sources,
         libraries=_libraries,
         extra_compile_args=_extra_compile_args)
 
-epan_ffi.set_source('wireshark.epan._epan', _source,
+epan_ffi.set_source('wspy.wireshark.lib.epan_ext', _sources,
         libraries=_libraries,
         extra_compile_args=_extra_compile_args)
