@@ -72,6 +72,10 @@ def epan_bool_to_str(fvalue, ftype, display, on_off=False, json_compat=True):
 def epan_int_to_str(fvalue, ftype, display):
 
     try:
+        # We are not displaying 'Extended string for the value
+        if display & epan_lib.BASE_EXT_STRING:
+            display ^= epan_lib.BASE_EXT_STRING
+
         base_format = hfbases[display]
     except:
         return "type: {} display: {} Not Supported".format(ftype, display)
