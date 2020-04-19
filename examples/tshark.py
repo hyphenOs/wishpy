@@ -26,6 +26,17 @@ hfbases = {
 def func_not_supported(*args):
     return "Not Supported"
 
+def epan_ether_to_str(fvalue, ftype, display):
+
+    eth_bytes = fvalue.value.bytes
+
+    display_bytes = []
+    for i in range(eth_bytes.len):
+        display_byte = "{:02X}".format(eth_bytes.data[i])
+        display_bytes.append(display_byte)
+
+    return ":".join(display_bytes)
+
 def epan_str_to_str(fvalue, ftype, display):
 
     value = fvalue.value.string
@@ -102,8 +113,11 @@ def value_to_str(finfo):
     if ftype in epan_all_int_types:
         return epan_int_to_str(fvalue, ftype, display)
 
-    if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
-        return ""
+    if ftype == epan_lib.FT_ETHER:
+        return epan_ether_to_str(fvalue, ftype, display)
+
+    if ftype == epan_lib.FT_IPv4:
+        return epan_ipv4_to_str(fvalue, ftype, display)
 
     if ftype == epan_lib.FT_BOOLEAN:
         return epan_bool_to_str(fvalue, ftype, display)
@@ -111,8 +125,8 @@ def value_to_str(finfo):
     if ftype == epan_lib.FT_STRING:
         return epan_str_to_str(fvalue, ftype, display)
 
-    if ftype == epan_lib.FT_IPv4:
-        return epan_ipv4_to_str(fvalue, ftype, display)
+    if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
+        return ""
 
     return "{} {}".format(ftype, display)
 
