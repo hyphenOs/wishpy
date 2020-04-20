@@ -11,6 +11,8 @@ from wspy.wireshark.lib.epan_ext import ffi as epan_ffi
 from wspy.wireshark.lib.wtap_ext import lib as wtap_lib
 from wspy.wireshark.lib.wtap_ext import ffi as wtap_ffi
 
+_MAX_TO_PROCESS = 10000000
+
 hfbases = {
         epan_lib.BASE_NONE : '{:d}', # Not sure how this is to be treated
         epan_lib.BASE_DEC : '{:d}',
@@ -146,11 +148,9 @@ def print_finfo(level, finfo):
     slashtees = "\t" * level
 
     return value_to_str(finfo)
-    #print(slashtees, abbrev, value_to_str(finfo))
 
 
-#@epan_ffi.callback('void(proto_node *, gpointer)')
-def per_node_func(node_ptr, data_ptr):
+def print_dissected_tree(node_ptr, data_ptr):
 
     return_str = ""
 
@@ -193,7 +193,7 @@ def per_node_func(node_ptr, data_ptr):
         return_str += "\n"
         while child != epan_ffi.NULL:
             return_str += "  " * level
-            return_str += per_node_func(child, data_ptr_new)
+            return_str += print_dissected_tree(child, data_ptr_new)
             child = child.next
         return_str += "  " * level
 
@@ -203,76 +203,13 @@ def per_node_func(node_ptr, data_ptr):
     if node.next != epan_ffi.NULL:
         return_str += ",\n"
 
-    _ = '''
-    node = node_ptr[0]
-    finfo = node.finfo
-    slashtees = "\t" * level
-    if finfo != epan_ffi.NULL:
-
-        hfinfo = finfo.hfinfo[0]
-        abbrev = epan_ffi.string(hfinfo.abbrev).decode()
-
-        return_str += slashtees
-        return_str += abbrev
-        return_str += ": "
-        finfo_str = print_finfo(level, finfo)
-
-        return_str += finfo_str
-
-        if finfo_str:
-            if node.next != epan_ffi.NULL:
-                return_str += ","
-        return_str += "\n"
-
-        child = node.first_child
-        data_ptr_new = epan_ffi.new('int *')
-        data_ptr_new[0] = level + 1
-        if child != epan_ffi.NULL:
-            #return_str += slashtees
-            if not finfo_str:
-                return_str += slashtees + abbrev + "_tree : " + " {\n"
-            else:
-                return_str += slashtees + " {\n"
-
-            while child != epan_ffi.NULL:
-                return_str += per_node_func(child, epan_ffi.cast('void *', data_ptr_new))
-                child = child.next
-
-            return_str += slashtees
-            return_str += "}"
-            if child != node.last_child:
-                return_str += ","
-
-    else:
-        child = node.first_child
-        data_ptr_new = epan_ffi.new('int *')
-        data_ptr_new[0] = level + 1
-        if child != epan_ffi.NULL:
-            #return_str += slashtees
-            return_str += " {\n"
-            while child != epan_ffi.NULL:
-                return_str += per_node_func(child, epan_ffi.cast('void *', data_ptr_new))
-                child = child.next
-
-            return_str += slashtees
-
-            return_str += "}"
-            if child != node.last_child:
-                return_str += ","
-
-    return_str += "\n"
-
-    '''
     return return_str
 
 def packet_to_json(frame_data_ptr, edt_ptr):
     fdata = frame_data_ptr[0]
     edt = edt_ptr[0]
 
-    #print(fdata.abs_ts.secs, fdata.abs_ts.nsecs, fdata.pkt_len, fdata.cap_len, edt.tree)
-
-    #print("{\n\"layers\":\n", per_node_func(edt.tree, epan_ffi.NULL), "\n}")
-    print(per_node_func(edt.tree, epan_ffi.NULL))
+    print(print_dissected_tree(edt.tree, epan_ffi.NULL))
 
 def wtap_open_file_offline(filepath):
     """
@@ -347,6 +284,7 @@ def epan_perform_dissection(wth, wth_file_type):
     cum_bytes = epan_ffi.new('guint32 *')
     then = dt.now()
     processed = 0
+    total_bytes = 0
     while True:
         result = wtap_lib.wtap_read(wth, err, err_str, offset)
 
@@ -360,10 +298,11 @@ def epan_perform_dissection(wth, wth_file_type):
             pkt_reported_len = rec.rec_header.packet_header.caplen
 
 
-            # FIXME: `Let there be proper `offset`, `cum_bytes`
-            epan_lib.frame_data_init(frame_data_ptr, 0, epan_rec,
+            epan_lib.frame_data_init(frame_data_ptr, processed, epan_rec,
                     offset[0], cum_bytes[0])
 
+            total_bytes += pkt_reported_len
+            cum_bytes[0] = total_bytes
             # FIXME: Look at properly using `frame_data_ref`
             epan_lib.frame_data_set_before_dissect(frame_data_ptr,
                     elapsed_time_ptr, frame_data_ref, epan_ffi.NULL)
@@ -381,22 +320,24 @@ def epan_perform_dissection(wth, wth_file_type):
             epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type,
                     epan_rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
-            # FIXME: Add code that gets our `packet` structure here
-            #epan_lib.proto_tree_children_foreach(epan_dissect_obj[0].tree,
-            #        per_node_func, epan_ffi.NULL)
             packet_to_json(frame_data_ptr, epan_dissect_obj)
 
             # Reset the frame data and dissector object
             epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
             epan_lib.epan_dissect_reset(epan_dissect_obj)
 
-            break
+            processed += 1
+
+            if processed == _MAX_TO_PROCESS:
+                break
+
         else:
             break
 
     now = dt.now()
 
-    print("Processded {} packets in {}".format(processed, (now - then)))
+    print("Processded {} bytes from {} packets in {}".format(
+            total_bytes, processed, (now - then)))
 
 
 if __name__ == '__main__':
