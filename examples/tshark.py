@@ -13,6 +13,19 @@ from wspy.wireshark.lib.wtap_ext import ffi as wtap_ffi
 
 _MAX_TO_PROCESS = 10000000
 
+
+nstime_empty = epan_ffi.new('nstime_t *');
+
+@epan_ffi.callback('const nstime_t *(*)(struct packet_provider_data *prov, guint32 frame_num)')
+def wspy_get_ts(prov, frame_num):
+
+    return nstime_empty
+
+wspy_provider_funcs = epan_ffi.new('struct packet_provider_funcs *',
+        [wspy_get_ts, epan_ffi.NULL, epan_ffi.NULL, epan_ffi.NULL])
+
+# Below are some dict's required for printing few packet types
+
 hfbases = {
         epan_lib.BASE_NONE : '{:d}', # Not sure how this is to be treated
         epan_lib.BASE_DEC : '{:d}',
@@ -266,8 +279,8 @@ def epan_perform_dissection(wth, wth_file_type):
     """
     Performs dissection of the file bound to `wth`
     """
-    empty_packet_provider_funcs = epan_ffi.new('struct packet_provider_funcs *')
-    epan_session = epan_lib.epan_new(epan_ffi.NULL, empty_packet_provider_funcs)
+    #empty_packet_provider_funcs = epan_ffi.new('struct packet_provider_funcs *')
+    epan_session = epan_lib.epan_new(epan_ffi.NULL, wspy_provider_funcs)
 
     # TODO: make proper `epan_session` for us
     epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
