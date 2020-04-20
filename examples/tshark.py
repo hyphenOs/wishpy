@@ -37,16 +37,18 @@ def epan_ether_to_str(fvalue, ftype, display):
 
     return ":".join(display_bytes)
 
+epan_bytes_to_str = epan_ether_to_str
+
 def epan_str_to_str(fvalue, ftype, display):
 
     value = fvalue.value.string
-    return epan_ffi.string(value)
+    return epan_ffi.string(value).decode()
 
 def epan_ipv4_to_str(fvalue, ftype, display):
 
     ipv4 = fvalue.value.ipv4
 
-    return socket.inet_ntoa(struct.pack('!I', ipv4.addr)).encode()
+    return socket.inet_ntoa(struct.pack('!I', ipv4.addr))
 
 def epan_bool_to_str(fvalue, ftype, display, on_off=False, json_compat=True):
 
@@ -129,6 +131,9 @@ def value_to_str(finfo):
     if ftype == epan_lib.FT_STRING:
         return epan_str_to_str(fvalue, ftype, display)
 
+    if ftype == epan_lib.FT_BYTES:
+        return epan_bytes_to_str(fvalue, ftype, display)
+
     if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
         return ""
 
@@ -140,26 +145,134 @@ def print_finfo(level, finfo):
     abbrev = epan_ffi.string(hfinfo.abbrev)
     slashtees = "\t" * level
 
-    print(slashtees, abbrev, value_to_str(finfo))
+    return value_to_str(finfo)
+    #print(slashtees, abbrev, value_to_str(finfo))
 
-@epan_ffi.callback('void(proto_node *, gpointer)')
+
+#@epan_ffi.callback('void(proto_node *, gpointer)')
 def per_node_func(node_ptr, data_ptr):
 
+    return_str = ""
+
     if data_ptr == epan_ffi.NULL:
-        level = 0
+        level = 1
     else:
         level = epan_ffi.cast('int *', data_ptr)[0]
 
+    return_str = ""
     node = node_ptr[0]
     finfo = node.finfo
-    print_finfo(level, finfo)
+    if finfo != epan_ffi.NULL:
 
-    child = node.first_child
+        hfinfo = finfo.hfinfo[0]
+        abbrev = epan_ffi.string(hfinfo.abbrev).decode()
+        abbrev_str = "\"{!s}\"".format(abbrev)
+        return_str += abbrev_str + ": "
+        finfo_display_str = print_finfo(level, finfo)
+        if finfo_display_str:
+            finfo_display_str = "\"{!s}\"".format(finfo_display_str)
+    else:
+        finfo_display_str = ""
+
+    return_str += finfo_display_str
+
     data_ptr_new = epan_ffi.new('int *')
     data_ptr_new[0] = level + 1
-    while child != epan_ffi.NULL:
-        per_node_func(child, epan_ffi.cast('void *', data_ptr_new))
-        child = child.next
+    child = node.first_child
+    if child != epan_ffi.NULL:
+
+        if finfo_display_str:
+            return_str += ",\n"
+
+            abbrev_tree = abbrev + "_tree"
+            abbrev_tree_str = "\"{!s}\"".format(abbrev_tree)
+            return_str += "  " * (level -1)
+            return_str += abbrev_tree_str + " : "
+
+        return_str += "{ "
+        return_str += "\n"
+        while child != epan_ffi.NULL:
+            return_str += "  " * level
+            return_str += per_node_func(child, data_ptr_new)
+            child = child.next
+        return_str += "  " * level
+
+        return_str += "\n"
+        return_str += "  " * (level-1)
+        return_str += "}"
+    if node.next != epan_ffi.NULL:
+        return_str += ",\n"
+
+    _ = '''
+    node = node_ptr[0]
+    finfo = node.finfo
+    slashtees = "\t" * level
+    if finfo != epan_ffi.NULL:
+
+        hfinfo = finfo.hfinfo[0]
+        abbrev = epan_ffi.string(hfinfo.abbrev).decode()
+
+        return_str += slashtees
+        return_str += abbrev
+        return_str += ": "
+        finfo_str = print_finfo(level, finfo)
+
+        return_str += finfo_str
+
+        if finfo_str:
+            if node.next != epan_ffi.NULL:
+                return_str += ","
+        return_str += "\n"
+
+        child = node.first_child
+        data_ptr_new = epan_ffi.new('int *')
+        data_ptr_new[0] = level + 1
+        if child != epan_ffi.NULL:
+            #return_str += slashtees
+            if not finfo_str:
+                return_str += slashtees + abbrev + "_tree : " + " {\n"
+            else:
+                return_str += slashtees + " {\n"
+
+            while child != epan_ffi.NULL:
+                return_str += per_node_func(child, epan_ffi.cast('void *', data_ptr_new))
+                child = child.next
+
+            return_str += slashtees
+            return_str += "}"
+            if child != node.last_child:
+                return_str += ","
+
+    else:
+        child = node.first_child
+        data_ptr_new = epan_ffi.new('int *')
+        data_ptr_new[0] = level + 1
+        if child != epan_ffi.NULL:
+            #return_str += slashtees
+            return_str += " {\n"
+            while child != epan_ffi.NULL:
+                return_str += per_node_func(child, epan_ffi.cast('void *', data_ptr_new))
+                child = child.next
+
+            return_str += slashtees
+
+            return_str += "}"
+            if child != node.last_child:
+                return_str += ","
+
+    return_str += "\n"
+
+    '''
+    return return_str
+
+def packet_to_json(frame_data_ptr, edt_ptr):
+    fdata = frame_data_ptr[0]
+    edt = edt_ptr[0]
+
+    #print(fdata.abs_ts.secs, fdata.abs_ts.nsecs, fdata.pkt_len, fdata.cap_len, edt.tree)
+
+    #print("{\n\"layers\":\n", per_node_func(edt.tree, epan_ffi.NULL), "\n}")
+    print(per_node_func(edt.tree, epan_ffi.NULL))
 
 def wtap_open_file_offline(filepath):
     """
@@ -269,13 +382,15 @@ def epan_perform_dissection(wth, wth_file_type):
                     epan_rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
             # FIXME: Add code that gets our `packet` structure here
-            epan_lib.proto_tree_children_foreach(epan_dissect_obj[0].tree,
-                    per_node_func, epan_ffi.NULL)
+            #epan_lib.proto_tree_children_foreach(epan_dissect_obj[0].tree,
+            #        per_node_func, epan_ffi.NULL)
+            packet_to_json(frame_data_ptr, epan_dissect_obj)
 
             # Reset the frame data and dissector object
             epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
             epan_lib.epan_dissect_reset(epan_dissect_obj)
 
+            break
         else:
             break
 
