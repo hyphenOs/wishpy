@@ -41,6 +41,7 @@ wtap_ffi.cdef(wtap_h_funcs_cdef)
 _sources = '''
         #include <wireshark/config.h>
         #include <wireshark/wiretap/wtap.h>
+        #include <wireshark/wsutil/privileges.h>
 '''
 
 _libraries = ['glib-2.0', 'wireshark', 'wsutil', 'wiretap']

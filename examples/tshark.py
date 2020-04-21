@@ -154,15 +154,6 @@ def value_to_str(finfo):
 
     return "{} {}".format(ftype, display)
 
-def print_finfo(level, finfo):
-
-    hfinfo = finfo.hfinfo[0]
-    abbrev = epan_ffi.string(hfinfo.abbrev)
-    slashtees = "\t" * level
-
-    return value_to_str(finfo)
-
-
 def print_dissected_tree(node_ptr, data_ptr):
 
     return_str = ""
@@ -181,7 +172,7 @@ def print_dissected_tree(node_ptr, data_ptr):
         abbrev = epan_ffi.string(hfinfo.abbrev).decode()
         abbrev_str = "\"{!s}\"".format(abbrev)
         return_str += abbrev_str + ": "
-        finfo_display_str = print_finfo(level, finfo)
+        finfo_display_str = value_to_str(finfo)
         if finfo_display_str:
             finfo_display_str = "\"{!s}\"".format(finfo_display_str)
     else:
@@ -222,7 +213,7 @@ def packet_to_json(frame_data_ptr, edt_ptr):
     fdata = frame_data_ptr[0]
     edt = edt_ptr[0]
 
-    print(print_dissected_tree(edt.tree, epan_ffi.NULL))
+    #print(print_dissected_tree(edt.tree, epan_ffi.NULL))
 
 def wtap_open_file_offline(filepath):
     """

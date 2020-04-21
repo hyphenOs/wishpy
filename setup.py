@@ -13,5 +13,6 @@ setup(name='wspy',
             'wspy/wireshark/src/wtap/wtap_builder.py:wtap_ffi',
             ],
         packages=find_packages(exclude=('wspy.wireshark.lib',)),
-        scripts=['examples/tshark.py'])
+        scripts=['examples/tshark.py'],
+        zip_safe=False)
 

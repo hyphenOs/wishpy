@@ -1,7 +1,5 @@
 wsutil_privileges_h_funcs_cdef = """
 
-
-
 /* privileges.h
  * Declarations of routines for handling privileges.
  *

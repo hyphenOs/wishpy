@@ -85,6 +85,8 @@ _sources = '''
             #include <wireshark/epan/proto.h>
             #include <wireshark/epan/epan_dissect.h>
             #include <wireshark/epan/epan.h>
+            #include <wireshark/epan/packet.h>
+            #include <wireshark/wsutil/privileges.h>
 '''
 _libraries = ['glib-2.0', 'wireshark', 'wsutil']
 _extra_compile_args = ['-I/usr/local/include/wireshark',
