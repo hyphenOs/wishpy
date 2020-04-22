@@ -49,7 +49,7 @@ _extra_compile_args = ['-I/usr/local/include/wireshark',
         '-I/usr/include/glib-2.0',
         '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include']
 
-wtap_ffi.set_source('wspy.wireshark.lib.wtap_ext',
+wtap_ffi.set_source('wishpy.wireshark.lib.wtap_ext',
         _sources,
         libraries=_libraries,
         extra_compile_args=_extra_compile_args)

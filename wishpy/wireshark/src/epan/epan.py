@@ -98,6 +98,6 @@ epan_lib = epan_ffi.verify(_sources,
         libraries=_libraries,
         extra_compile_args=_extra_compile_args)
 
-epan_ffi.set_source('wspy.wireshark.lib.epan_ext', _sources,
+epan_ffi.set_source('wishpy.wireshark.lib.epan_ext', _sources,
         libraries=_libraries,
         extra_compile_args=_extra_compile_args)

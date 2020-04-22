@@ -5,11 +5,11 @@ import struct
 import socket
 from datetime import datetime as dt
 
-from wspy.wireshark.lib.epan_ext import lib as epan_lib
-from wspy.wireshark.lib.epan_ext import ffi as epan_ffi
+from wishpy.wireshark.lib.epan_ext import lib as epan_lib
+from wishpy.wireshark.lib.epan_ext import ffi as epan_ffi
 
-from wspy.wireshark.lib.wtap_ext import lib as wtap_lib
-from wspy.wireshark.lib.wtap_ext import ffi as wtap_ffi
+from wishpy.wireshark.lib.wtap_ext import lib as wtap_lib
+from wishpy.wireshark.lib.wtap_ext import ffi as wtap_ffi
 
 _MAX_TO_PROCESS = 10000000
 
@@ -17,12 +17,12 @@ _MAX_TO_PROCESS = 10000000
 nstime_empty = epan_ffi.new('nstime_t *');
 
 @epan_ffi.callback('const nstime_t *(*)(struct packet_provider_data *prov, guint32 frame_num)')
-def wspy_get_ts(prov, frame_num):
+def wishpy_get_ts(prov, frame_num):
 
     return nstime_empty
 
-wspy_provider_funcs = epan_ffi.new('struct packet_provider_funcs *',
-        [wspy_get_ts, epan_ffi.NULL, epan_ffi.NULL, epan_ffi.NULL])
+wishpy_provider_funcs = epan_ffi.new('struct packet_provider_funcs *',
+        [wishpy_get_ts, epan_ffi.NULL, epan_ffi.NULL, epan_ffi.NULL])
 
 # Below are some dict's required for printing few packet types
 
@@ -271,7 +271,7 @@ def epan_perform_dissection(wth, wth_file_type):
     Performs dissection of the file bound to `wth`
     """
     #empty_packet_provider_funcs = epan_ffi.new('struct packet_provider_funcs *')
-    epan_session = epan_lib.epan_new(epan_ffi.NULL, wspy_provider_funcs)
+    epan_session = epan_lib.epan_new(epan_ffi.NULL, wishpy_provider_funcs)
 
     # TODO: make proper `epan_session` for us
     epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)

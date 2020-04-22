@@ -29,7 +29,7 @@ and then one can run `python tshark.py <pcap-filename>` to see this in action.
 The directory structure of the code is as follows -
 
 ```
-wspy/
+wishpy/
   wireshark/
     src/
       epan/
