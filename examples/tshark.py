@@ -213,7 +213,7 @@ def packet_to_json(frame_data_ptr, edt_ptr):
     fdata = frame_data_ptr[0]
     edt = edt_ptr[0]
 
-    #print(print_dissected_tree(edt.tree, epan_ffi.NULL))
+    print(print_dissected_tree(edt.tree, epan_ffi.NULL))
 
 def wtap_open_file_offline(filepath):
     """

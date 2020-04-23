@@ -1,4 +1,4 @@
-from wishpy.wireshark.src.epan.epan import (
+from wishpy.wireshark.src.wireshark2.epan.epan import (
         epan_ffi,
         _sources,
         _libraries,

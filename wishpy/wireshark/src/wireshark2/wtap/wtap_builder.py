@@ -1,4 +1,4 @@
-from wishpy.wireshark.src.wtap.wtap import (
+from wishpy.wireshark.src.wireshark2.wtap.wtap import (
         wtap_ffi,
         _sources,
         _libraries,

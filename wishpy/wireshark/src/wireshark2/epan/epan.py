@@ -1,10 +1,10 @@
 from cffi import FFI
 
-from ..glib.glib_h import glib_h_cdef
-from ..glib.garray_h import garray_h_cdef
-from ..glib.glist_h import glist_h_cdef
-from ..glib.gstring_h import glib_gstring_h_types_cdef
-from ..glib.ghash_h import glib_ghash_h_types_cdef
+from ...glib.glib_h import glib_h_cdef
+from ...glib.garray_h import garray_h_cdef
+from ...glib.glist_h import glist_h_cdef
+from ...glib.gstring_h import glib_gstring_h_types_cdef
+from ...glib.ghash_h import glib_ghash_h_types_cdef
 
 from ..wsutil.nstime_h import wsutil_nstime_h_types_cdef
 from ..wsutil.buffer_h import wsutil_buffer_h_cdef

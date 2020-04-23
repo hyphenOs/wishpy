@@ -32,10 +32,15 @@ The directory structure of the code is as follows -
 wishpy/
   wireshark/
     src/
-      epan/
-      wtap/
-      wsutil/
       glib/
+      wireshark2/
+        epan/
+        wtap/
+        wsutil/
+      wireshark3/
+        epan/
+        wtap/
+        wsutil/
       ...
     lib/
       ...
