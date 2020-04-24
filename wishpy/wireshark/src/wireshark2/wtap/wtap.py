@@ -4,11 +4,11 @@ from ...glib.glib_h import glib_h_cdef
 from ...glib.garray_h import garray_h_cdef
 from ...glib.glist_h import glist_h_cdef
 
-from ..wsutil.nstime_h import wsutil_nstime_h_types_cdef
-from ..wsutil.buffer_h import wsutil_buffer_h_cdef
-from ..wsutil.inet_ipv4_h import wsutil_inet_ipv4_h_cdef
-from ..wsutil.inet_ipv6_h import wsutil_inet_ipv6_h_cdef
-from ..wsutil.inet_addr_h import wsutil_inet_addr_h_cdef
+from ...wsutil.nstime_h import wsutil_nstime_h_types_cdef
+from ...wsutil.buffer_h import wsutil_buffer_h_cdef
+from ...wsutil.inet_ipv4_h import wsutil_inet_ipv4_h_cdef
+from ...wsutil.inet_ipv6_h import wsutil_inet_ipv6_h_cdef
+from ...wsutil.inet_addr_h import wsutil_inet_addr_h_cdef
 
 from .wtap_h import wtap_h_types_cdef, wtap_h_funcs_cdef
 from .wtap_opttypes_h import (
