@@ -68,4 +68,20 @@ struct _GSList
 
 // from <glib-2.0/glib/gregex.h>
 typedef struct _GRegex		GRegex;
+
+typedef gint            (*GCompareFunc)         (gconstpointer  a,
+                                                 gconstpointer  b);
+typedef gint            (*GCompareDataFunc)     (gconstpointer  a,
+                                                 gconstpointer  b,
+						 gpointer       user_data);
+typedef gboolean        (*GEqualFunc)           (gconstpointer  a,
+                                                 gconstpointer  b);
+typedef void            (*GDestroyNotify)       (gpointer       data);
+typedef void            (*GFunc)                (gpointer       data,
+                                                 gpointer       user_data);
+typedef guint           (*GHashFunc)            (gconstpointer  key);
+typedef void            (*GHFunc)               (gpointer       key,
+                                                 gpointer       value,
+                                                 gpointer       user_data);
+
 """
