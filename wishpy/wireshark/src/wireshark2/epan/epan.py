@@ -1,4 +1,8 @@
 from cffi import FFI
+try:
+    from cffi import PkgConfigError
+except:
+    pass
 
 from ...glib.glib_h import glib_h_cdef
 from ...glib.garray_h import garray_h_cdef
@@ -79,25 +83,32 @@ epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
 # Go ahead and get the Library handle
 
+_pkg_name = 'wishpy.wireshark.lib.epan_ext'
+_pkgconfig_libs = ['wireshark']
+
 _sources = '''
-            #include <wireshark/config.h>
-            #include <wireshark/epan/address.h>
-            #include <wireshark/epan/proto.h>
-            #include <wireshark/epan/epan_dissect.h>
-            #include <wireshark/epan/epan.h>
-            #include <wireshark/epan/packet.h>
-            #include <wireshark/wsutil/privileges.h>
+            #include <config.h>
+            #include <epan/address.h>
+            #include <epan/proto.h>
+            #include <epan/epan_dissect.h>
+            #include <epan/epan.h>
+            #include <epan/packet.h>
+            #include <wsutil/privileges.h>
 '''
 _libraries = ['glib-2.0', 'wireshark', 'wsutil']
-_extra_compile_args = ['-I/usr/local/include/wireshark',
+_extra_compile_args = ['-I/usr/include/wireshark',
             '-I/usr/include/glib-2.0',
             '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include',
-            '-L/usr/local/lib']
+            #'-L/usr/local/lib'
+            ]
 
 epan_lib = epan_ffi.verify(_sources,
         libraries=_libraries,
         extra_compile_args=_extra_compile_args)
 
-epan_ffi.set_source('wishpy.wireshark.lib.epan_ext', _sources,
-        libraries=_libraries,
-        extra_compile_args=_extra_compile_args)
+try:
+    epan_ffi.set_source_pkgconfig(_pkg_name, _pkgconfig_libs, _sources)
+except PkgConfigError:
+    epan_ffi._set_source(_pkg_name, _sources,
+            libraries=_libraries,
+            extra_compile_args=_extra_compile_args)

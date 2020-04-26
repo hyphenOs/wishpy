@@ -33,14 +33,13 @@ wishpy/
   wireshark/
     src/
       glib/
+      wsutil/
       wireshark2/
         epan/
         wtap/
-        wsutil/
       wireshark3/
         epan/
         wtap/
-        wsutil/
       ...
     lib/
       ...

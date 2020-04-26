@@ -38,6 +38,8 @@ wtap_ffi.cdef(wtap_h_types_cdef)
 wtap_ffi.cdef(wtap_h_funcs_cdef)
 
 
+_pkg_name = 'wishpy.wireshark.lib.wtap_ext'
+_pkgconfig_libs = ['wiretap']
 _sources = '''
         #include <wireshark/config.h>
         #include <wireshark/wiretap/wtap.h>
@@ -45,7 +47,7 @@ _sources = '''
 '''
 
 _libraries = ['glib-2.0', 'wireshark', 'wsutil', 'wiretap']
-_extra_compile_args = ['-I/usr/local/include/wireshark',
+_extra_compile_args = ['-I/usr/include/wireshark',
         '-I/usr/include/glib-2.0',
         '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include']
 
