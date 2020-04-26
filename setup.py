@@ -65,7 +65,7 @@ setup(name='wishpy',
         description='Python Bindings for Wireshark using CFFI',
         author='Abhijit Gadgil',
         author_email='gabhijit@iitbombay.org',
-        license_files=['LICENSE', 'COPYING', 'COPYING-wireshark'],
+        license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark'],
         setup_requires=['cffi>=1.14.0'],
         install_requires=['cffi>=1.14.0'],
         cffi_modules=[

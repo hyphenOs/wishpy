@@ -1,4 +1,8 @@
 from cffi import FFI
+try:
+    from cffi import PkgConfigError
+except:
+    pass
 
 from ...glib.glib_h import glib_h_cdef
 from ...glib.garray_h import garray_h_cdef
@@ -82,24 +86,38 @@ epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
 _sources = '''
             #define HAVE_PLUGINS 1
-            #include <wireshark/epan/address.h>
-            #include <wireshark/epan/proto.h>
-            #include <wireshark/epan/epan_dissect.h>
-            #include <wireshark/epan/epan.h>
-            #include <wireshark/epan/packet.h>
-            #include <wireshark/epan/prefs.h>
-            #include <wireshark/wsutil/privileges.h>
+            #include <epan/address.h>
+            #include <epan/proto.h>
+            #include <epan/epan_dissect.h>
+            #include <epan/epan.h>
+            #include <epan/packet.h>
+            #include <epan/prefs.h>
+            #include <wsutil/privileges.h>
 '''
+
+_pkg_name = 'wishpy.wireshark.lib.epan3_ext'
+
+_pkgconfig_libs = ['wireshark']
+
 _libraries = ['glib-2.0', 'wireshark', 'wsutil']
-_extra_compile_args = ['-I/usr/local/include/wireshark',
-            '-I/usr/include/glib-2.0',
-            '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include',
-            '-L/usr/local/lib']
 
-epan_lib = epan_ffi.verify(_sources,
-        libraries=_libraries,
-        extra_compile_args=_extra_compile_args)
+_extra_compile_args = [
+        '-I/usr/local/include/wireshark',
+        '-I/usr/include/wireshark',
+        '-I/usr/include/glib-2.0',
+        '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include',
+        ]
 
-epan_ffi.set_source('wishpy.wireshark.lib.epan_ext', _sources,
-        libraries=_libraries,
-        extra_compile_args=_extra_compile_args)
+_extra_link_args = [
+        '-L/usr/local/lib',
+        ]
+
+try:
+    epan_ffi.set_source_pkgconfig(_pkg_name, _pkgconfig_libs, _sources,
+            extra_link_args=_extra_link_args)
+    print("***** 1 *****")
+except PkgConfigError:
+    epan_ffi._set_source(_pkg_name, _sources,
+            libraries=_libraries,
+            extra_compile_args=_extra_compile_args,
+            extra_link_args=_extra_link_args)

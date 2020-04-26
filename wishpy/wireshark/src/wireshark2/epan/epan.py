@@ -83,7 +83,7 @@ epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
 # Go ahead and get the Library handle
 
-_pkg_name = 'wishpy.wireshark.lib.epan_ext'
+_pkg_name = 'wishpy.wireshark.lib.epan2_ext'
 _pkgconfig_libs = ['wireshark']
 
 _sources = '''
@@ -99,7 +99,6 @@ _libraries = ['glib-2.0', 'wireshark', 'wsutil']
 _extra_compile_args = ['-I/usr/include/wireshark',
             '-I/usr/include/glib-2.0',
             '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include',
-            #'-L/usr/local/lib'
             ]
 
 epan_lib = epan_ffi.verify(_sources,

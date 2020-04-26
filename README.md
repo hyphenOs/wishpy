@@ -51,3 +51,14 @@ now everything is packaged together.
 
 Right now we have only 'wrapped extensions' available, eventually more Pythonic
 API will be provided (That will be dependent upon the extension library)
+
+
+# Wireshark support
+
+Right now both Wireshark 2.6.x and wireshark 3.2.x are supporte.
+
+The best way to make sure this works is through `pkg-config`. If both versions
+of the library are present, we'll try to install both bindings. Right now,
+default support is for wireshark 2.6 that ships with Ubuntu.
+If you have both the versions installed, it's a little bit tricky. If building
+`wireshark` from source, `pkg-config` takes care of it.

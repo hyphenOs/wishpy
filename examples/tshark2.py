@@ -5,11 +5,11 @@ import struct
 import socket
 from datetime import datetime as dt
 
-from wishpy.wireshark.lib.epan_ext import lib as epan_lib
-from wishpy.wireshark.lib.epan_ext import ffi as epan_ffi
+from wishpy.wireshark.lib.epan2_ext import lib as epan_lib
+from wishpy.wireshark.lib.epan2_ext import ffi as epan_ffi
 
-from wishpy.wireshark.lib.wtap_ext import lib as wtap_lib
-from wishpy.wireshark.lib.wtap_ext import ffi as wtap_ffi
+from wishpy.wireshark.lib.wtap2_ext import lib as wtap_lib
+from wishpy.wireshark.lib.wtap2_ext import ffi as wtap_ffi
 
 _MAX_TO_PROCESS = 10000000
 
