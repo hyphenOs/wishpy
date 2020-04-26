@@ -49,7 +49,6 @@ if major == 2:
         sys.exit(-1)
 
     epan_ffi_module = 'wishpy/wireshark/src/wireshark2/epan/epan_builder.py:epan_ffi'
-    wtap_ffi_module = 'wishpy/wireshark/src/wireshark2/wtap/wtap_builder.py:wtap_ffi'
 
 elif major == 3:
     if minor != 2:
@@ -57,7 +56,6 @@ elif major == 3:
         sys.exit(-1)
 
     epan_ffi_module = 'wishpy/wireshark/src/wireshark3/epan/epan_builder.py:epan_ffi'
-    wtap_ffi_module = 'wishpy/wireshark/src/wireshark3/wtap/wtap_builder.py:wtap_ffi'
 
 
 setup(name='wishpy',
@@ -69,10 +67,9 @@ setup(name='wishpy',
         setup_requires=['cffi>=1.14.0'],
         install_requires=['cffi>=1.14.0'],
         cffi_modules=[
-            epan_ffi_module,
-            wtap_ffi_module
+            epan_ffi_module
             ],
         packages=find_packages(), #exclude=('wishpy.wireshark.lib',)),
-        scripts=['examples/tshark.py'],
+        scripts=['examples/tshark3.py', 'examples/tshark2.py'],
         zip_safe=False)
 

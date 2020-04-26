@@ -21,8 +21,13 @@ from ...wsutil.colors_h import wsutil_colors_h_cdef
 from ...wsutil.privileges_h import wsutil_privileges_h_funcs_cdef
 
 
-from ..wtap.wtap_h import wtap_h_types_cdef
-from ..wtap.wtap_opttypes_h import wtap_opttypes_h_types_cdef
+from ..wtap.wtap_h import (
+        wtap_h_types_cdef,
+        wtap_h_funcs_cdef)
+
+from ..wtap.wtap_opttypes_h import (
+        wtap_opttypes_h_types_cdef,
+        wtap_opttypes_h_funcs_cdef)
 
 from .epan_h import epan_h_cdef
 from .register_h import epan_register_h_cdef
@@ -60,7 +65,9 @@ epan_ffi.cdef(wsutil_colors_h_cdef)
 epan_ffi.cdef(wsutil_privileges_h_funcs_cdef)
 
 epan_ffi.cdef(wtap_opttypes_h_types_cdef)
+epan_ffi.cdef(wtap_opttypes_h_funcs_cdef)
 epan_ffi.cdef(wtap_h_types_cdef)
+epan_ffi.cdef(wtap_h_funcs_cdef)
 
 epan_ffi.cdef(framedata_h_cdef)
 epan_ffi.cdef(epan_register_h_cdef)
