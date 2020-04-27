@@ -59,7 +59,7 @@ elif major == 3:
 
 
 setup(name='wishpy',
-        version='0.0.1',
+        version='0.0.2',
         description='Python Bindings for Wireshark using CFFI',
         author='Abhijit Gadgil',
         author_email='gabhijit@iitbombay.org',
