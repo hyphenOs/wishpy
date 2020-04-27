@@ -4,11 +4,31 @@ import time
 import struct
 import socket
 from datetime import datetime as dt
+import warnings
 
-from wishpy.wireshark.lib.epan2_ext import lib as epan_lib
-from wishpy.wireshark.lib.epan2_ext import ffi as epan_ffi
+
+try:
+    from wishpy.wireshark.lib.epan3_ext import lib as epan_lib
+    from wishpy.wireshark.lib.epan3_ext import ffi as epan_ffi
+except ImportError:
+    warnings.warn("Bindings for supported wireshark Version (3.2.x) Not found.")
+    sys.exit(-1)
 
 _MAX_TO_PROCESS = 10000000
+
+# FIXME: This should come from some common utils
+# Make sure we are indeed wireshark 3.2
+major = epan_ffi.new('int *')
+minor = epan_ffi.new('int *')
+micro = epan_ffi.new('int *')
+
+epan_lib.epan_get_version_number(major, minor, micro)
+if major[0] != 3 and minor[0] != 2:
+    version_str = "{}.{}.{}".format(major[0], minor[0], micro[0])
+    warn_str = "This is supported only with Wireshark 3.2.x, found version {}".\
+            format(version_str)
+    warnings.warn(warn_str)
+    sys.exit(1)
 
 
 nstime_empty = epan_ffi.new('nstime_t *');
@@ -250,14 +270,8 @@ def epan_lib_init():
 
     epan_lib.init_process_policies()
     null_register_cb = epan_ffi.cast('register_cb', epan_ffi.NULL)
-    register_protocols_handle = epan_ffi.callback('void (*)(register_cb, gpointer)',
-            epan_lib.register_all_protocols)
-    register_handoffs_handle = epan_ffi.callback('void (*)(register_cb, gpointer)',
-            epan_lib.register_all_protocol_handoffs)
     result = epan_lib.epan_init(
-            register_protocols_handle,
-            register_handoffs_handle,
-            null_register_cb, epan_ffi.NULL)
+            null_register_cb, epan_ffi.NULL, True)
     if result:
         epan_lib.epan_load_settings()
 
@@ -277,6 +291,10 @@ def epan_perform_dissection(wth, wth_file_type):
     frame_data_ref = epan_ffi.new('frame_data **')
     elapsed_time_ptr = epan_ffi.new('nstime_t *')
 
+    buf = epan_ffi.new('Buffer *')
+    epan_lib.ws_buffer_init(buf, 1514) # FIXME : Should do with proper length
+    rec = epan_ffi.new('wtap_rec *')
+    epan_lib.wtap_rec_init(rec)
     err = epan_ffi.new('int *')
     err_str = epan_ffi.new("gchar **")
 
@@ -287,19 +305,16 @@ def epan_perform_dissection(wth, wth_file_type):
     processed = 0
     total_bytes = 0
     while True:
-        result = epan_lib.wtap_read(wth, err, err_str, offset)
+        result = epan_lib.wtap_read(wth, rec, buf, err, err_str, offset)
 
         if result == True:
             processed += 1
-            rec = epan_lib.wtap_get_rec(wth)
-            buf_ptr = epan_lib.wtap_get_buf_ptr(wth)
 
-            epan_rec = epan_ffi.cast('wtap_rec *', rec)
             pkt_len = rec.rec_header.packet_header.len
             pkt_reported_len = rec.rec_header.packet_header.caplen
 
 
-            epan_lib.frame_data_init(frame_data_ptr, processed, epan_rec,
+            epan_lib.frame_data_init(frame_data_ptr, processed, rec,
                     offset[0], cum_bytes[0])
 
             total_bytes += pkt_reported_len
@@ -315,11 +330,11 @@ def epan_perform_dissection(wth, wth_file_type):
 
             ## Do actual dissection here.
             # Get buffer and tvbuff first and then run dissector
-            tvb_ptr = epan_lib.tvb_new_real_data(buf_ptr, pkt_len,
+            tvb_ptr = epan_lib.tvb_new_real_data(buf[0].data, pkt_len,
                     pkt_reported_len)
 
             epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type,
-                    epan_rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
+                    rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
             packet_to_json(frame_data_ptr, epan_dissect_obj)
 

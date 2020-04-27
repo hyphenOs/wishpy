@@ -4,11 +4,30 @@ import time
 import struct
 import socket
 from datetime import datetime as dt
+import warnings
 
-from wishpy.wireshark.lib.epan2_ext import lib as epan_lib
-from wishpy.wireshark.lib.epan2_ext import ffi as epan_ffi
+try:
+    from wishpy.wireshark.lib.epan2_ext import lib as epan_lib
+    from wishpy.wireshark.lib.epan2_ext import ffi as epan_ffi
+except ImportError:
+    warnings.warn("Bindings for supported wireshark Version (2.6.x) Not found.")
+    sys.exit(-1)
 
 _MAX_TO_PROCESS = 10000000
+
+# FIXME: This should come from some common utils
+# Make sure we are indeed wireshark 3.2
+major = epan_ffi.new('int *')
+minor = epan_ffi.new('int *')
+micro = epan_ffi.new('int *')
+
+epan_lib.epan_get_version_number(major, minor, micro)
+if major[0] != 2 and minor[0] != 6:
+    version_str = "{}.{}.{}".format(major[0], minor[0], micro[0])
+    warn_str = "This is supported only with Wireshark 2.6.x, found version {}".\
+            format(version_str)
+    warnings.warn(warn_str)
+    sys.exit(1)
 
 
 nstime_empty = epan_ffi.new('nstime_t *');

@@ -83,8 +83,10 @@ extern void frame_data_init(frame_data *fdata, guint32 num,
                 const wtap_rec *rec, gint64 offset,
                 guint32 cum_bytes);
 
+/* FIXME: Not exported by lib
 extern void frame_delta_abs_time(const struct epan_session *epan, const frame_data *fdata,
                 guint32 prev_num, nstime_t *delta);
+*/
 /**
  * Sets the frame data struct values before dissection.
  */

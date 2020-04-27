@@ -31,7 +31,10 @@ from ..wtap.wtap_opttypes_h import (
 
 from .epan_h import epan_h_cdef
 from .register_h import epan_register_h_types_cdef
-from .framedata_h import framedata_h_types_cdef
+from .framedata_h import (
+        framedata_h_types_cdef,
+        framedata_h_funcs_cdef
+        )
 from .prefs_h import epan_prefs_h_cdef
 from .params_h import epan_params_h_cdef
 from .range_h import epan_range_h_types_cdef
@@ -70,6 +73,7 @@ epan_ffi.cdef(wtap_h_types_cdef)
 epan_ffi.cdef(wtap_h_funcs_cdef)
 
 epan_ffi.cdef(framedata_h_types_cdef)
+epan_ffi.cdef(framedata_h_funcs_cdef)
 epan_ffi.cdef(epan_register_h_types_cdef)
 epan_ffi.cdef(epan_params_h_cdef)
 epan_ffi.cdef(epan_range_h_types_cdef)
