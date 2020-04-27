@@ -10,3 +10,4 @@ if __name__ == '__main__':
             extra_compile_args=_extra_compile_args)
 
     print(epan_lib)
+    print(epan_ffi.new('wtap_rec *'))
