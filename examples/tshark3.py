@@ -226,11 +226,10 @@ def print_dissected_tree(node_ptr, data_ptr):
 
     return return_str
 
-def packet_to_json(frame_data_ptr, edt_ptr):
-    fdata = frame_data_ptr[0]
-    edt = edt_ptr[0]
+def packet_to_json(handle_ptr):
 
-    print(print_dissected_tree(edt.tree, epan_ffi.NULL))
+    dissector = handle_ptr[0]
+    print(print_dissected_tree(dissector.tree, epan_ffi.NULL))
 
 def wtap_open_file_offline(filepath):
     """

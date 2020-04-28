@@ -65,11 +65,9 @@ setup(name='wishpy',
         author_email='gabhijit@iitbombay.org',
         license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark'],
         setup_requires=['cffi>=1.14.0'],
-        install_requires=['cffi>=1.14.0'],
         cffi_modules=[
             epan_ffi_module
             ],
         packages=find_packages(), #exclude=('wishpy.wireshark.lib',)),
-        scripts=['examples/tshark3.py', 'examples/tshark2.py'],
+        scripts=['examples/tshark3.py', 'examples/tshark2.py', 'examples/tshark.py'],
         zip_safe=False)
-
