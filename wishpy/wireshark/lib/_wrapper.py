@@ -128,6 +128,9 @@ def _epan_perform_dissection_v2(wth, wth_file_type, cb_func):
         else:
             break
 
+    epan_lib.epan_dissect_free(epan_dissect_obj)
+    epan_lib.epan_free(epan_session)
+
     return processed
 
 def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
@@ -199,6 +202,9 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
         else:
             break
 
+    epan_lib.epan_dissect_free(epan_dissect_obj)
+    epan_lib.epan_free(epan_session)
+
     return processed
 
 def wtap_open_file_offline(filepath):
@@ -209,9 +215,6 @@ def wtap_open_file_offline(filepath):
 
     if not os.path.exists(filepath):
         return None, None
-
-
-    epan_lib.wtap_init(False)
 
     # Open a wtap file
     err = epan_ffi.new('int *')
@@ -228,9 +231,22 @@ def wtap_open_file_offline(filepath):
 wtap_close = epan_lib.wtap_close
 epan_cleanup = epan_lib.epan_cleanup
 
+
 if _epan_version == (2,6):
     epan_lib_init = _epan_init_v2
     epan_perform_dissection = _epan_perform_dissection_v2
 else:
     epan_lib_init = _epan_init_v3
     epan_perform_dissection = _epan_perform_dissection_v3
+
+def perform_epan_wtap_init():
+
+    # FIXME: True / False to be decided
+    epan_lib.wtap_init(False)
+
+    return epan_lib_init()
+
+def perform_epan_wtap_cleanup():
+
+    epan_lib.epan_cleanup()
+    epan_lib.wtap_cleanup()
