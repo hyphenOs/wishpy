@@ -20,16 +20,16 @@ It is highly recommended to start with a virtual environment, something like
 
 Typically simply doing a `python setup.py install` should be enough to get
 you started. If everything goes well, one will have the modules installed
-in the `site-packages`
+in the `site-packages`.
 
-and then one can run `python examples/tshark{2|3}.py <pcap-filename>`
-to see this in action. Right now unfortunately the APIs are not abstracted out,
-so one has to use the version of `tshark` that is compatible with the wireshark
-version. (`example/tshak2.py` - works with wireshark 2.6 and
-`examples/tshak3.py` works with wireshark 3.2)
+Once the packages are installed, you can run `python examples/tshark.py <pcap-filename>`
+
+Alternatively, if you just want to use wrapped APIs, they are used in -
+1. examples/tshark2.py (For wireshark 2.6)
+2. examples/tshark3.py (For wireshark 3.2)
 
 Unfortunately there's not much you can do besides running it against some pcaps
-and see the json dump of the packets. This is likely going to change.
+and see the json dump of the packets.
 
 # Wireshark support
 
@@ -67,6 +67,8 @@ The `src` directory above is essentially, a source code for generating the
 the sources and `bdist`/`install` to only populate the `lib` directory. For
 now everything is packaged together.
 
-Right now we have only 'wrapped extensions' available, eventually more Pythonic
-API will be provided (That will be dependent upon the extension library)
+Right now we have only 'wrapped extensions' available.
+We have started with some very 'basic' Dissector API. See `examples/tshark.py` to see how it can be used.
+This API is very early (in fact this is not really an API, but just a hint about what API might look like.)
+and definitely is going to change.
 

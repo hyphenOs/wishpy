@@ -31,17 +31,14 @@ if major[0] != 2 and minor[0] != 6:
 
 
 nstime_empty = epan_ffi.new('nstime_t *');
-
 @epan_ffi.callback('const nstime_t *(*)(struct packet_provider_data *prov, guint32 frame_num)')
 def wishpy_get_ts(prov, frame_num):
-
     return nstime_empty
 
 wishpy_provider_funcs = epan_ffi.new('struct packet_provider_funcs *',
         [wishpy_get_ts, epan_ffi.NULL, epan_ffi.NULL, epan_ffi.NULL])
 
 # Below are some dict's required for printing few packet types
-
 hfbases = {
         epan_lib.BASE_NONE : '{:d}', # Not sure how this is to be treated
         epan_lib.BASE_DEC : '{:d}',
@@ -225,11 +222,10 @@ def print_dissected_tree(node_ptr, data_ptr):
 
     return return_str
 
-def packet_to_json(frame_data_ptr, edt_ptr):
-    fdata = frame_data_ptr[0]
-    edt = edt_ptr[0]
+def packet_to_json(handle_ptr):
 
-    print(print_dissected_tree(edt.tree, epan_ffi.NULL))
+    dissector = handle_ptr[0]
+    print(print_dissected_tree(dissector.tree, epan_ffi.NULL))
 
 def wtap_open_file_offline(filepath):
     """
@@ -326,7 +322,6 @@ def epan_perform_dissection(wth, wth_file_type):
             # FIXME: Look at properly using `frame_data_ref`
             epan_lib.frame_data_set_before_dissect(frame_data_ptr,
                     elapsed_time_ptr, frame_data_ref, epan_ffi.NULL)
-
 
             # Not sure what this is - Just copied from `tshark` sources
             epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
