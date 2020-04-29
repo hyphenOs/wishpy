@@ -63,7 +63,7 @@ wishpy/
       ...
 ```
 The `src` directory above is essentially, a source code for generating the
-`lib` directory during run-time. (In future, we'll have `sdist` only package
+`lib` directory during run-time. In future, we'll have `sdist` only package
 the sources and `bdist`/`install` to only populate the `lib` directory. For
 now everything is packaged together.
 

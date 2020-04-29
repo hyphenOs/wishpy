@@ -3,12 +3,20 @@ import struct
 
 from ._wrapper import *
 
+
+class WishpyEpanLibUninitializedError(Exception):
+    pass
+
+class WishpyEpanLibAlreadyInitialized(Exception):
+    pass
+
 class WishpyErrorWthOpen(Exception):
     pass
 
+_EPAN_LIB_INITIALIZED = False
+
 class WishpyDissector:
 
-    __EPAN_LIB_INITIALIZED = False
 
     # Below are some dict's required for printing few packet types
     hfbases = {
@@ -215,24 +223,46 @@ class WishpyDissector:
 
     def run(self):
 
+        if not _EPAN_LIB_INITIALIZED:
+            raise WishpyEpanLibUninitializedError(
+                    "Epan Library Not initialized. Did you call setup_process()"
+                    )
         # FIXME: dissector.run can be run only once right now
         # FIXME: Pass errno / errstr ourselves to get the error to be passed
         # to the Exception handler
 
         # FIXME: Do this as a context manager
+        print ("before wtap_open_file_offline")
         wth, wth_filetype = wtap_open_file_offline(self.__filename)
         if wth is None:
             raise WishpyErrorWthOpen()
 
-        epan_lib_init()
 
         processed = epan_perform_dissection(wth, wth_filetype,
                 self.packet_to_json)
 
         wtap_close(wth)
-        #epan_cleanup()
 
         return processed
 
+def setup_process():
 
-__all__ = [WishpyErrorWthOpen, WishpyDissector]
+    global _EPAN_LIB_INITIALIZED
+
+    if _EPAN_LIB_INITIALIZED:
+        raise WishpyEpanLibAlreadyInitialized(
+                "Epan Library already initialized. setup_process() "\
+                        "should be called only once per process.")
+
+    _EPAN_LIB_INITIALIZED = perform_epan_wtap_init()
+
+
+def cleanup_process():
+
+    perform_epan_wtap_cleanup()
+
+    global _EPAN_LIB_INITIALIZED
+    _EPAN_LIB_INITIALIZED = False
+
+
+__all__ = [WishpyDissector]
