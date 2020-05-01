@@ -1,8 +1,9 @@
-Python Bindings for Wireshark
+Python Bindings for Wireshark and libpcap
 
-- Uses CFFI to generate Python bindings for wireshark
+- Uses CFFI to generate Python bindings for wireshark and libpcap
 - You can write applications like `tshark` in Python
-- Makes wireshark's dissectors available in Python
+- Makes wireshark's dissectors available in Python and makes libpcap
+  easily available in Python for packet capture
 
 - Very very early still
 
