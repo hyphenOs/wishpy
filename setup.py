@@ -71,5 +71,8 @@ setup(name='wishpy',
             libpcap_ffi_module
             ],
         packages=find_packages(), #exclude=('wishpy.wireshark.lib',)),
-        scripts=['examples/tshark3.py', 'examples/tshark2.py', 'examples/tshark.py'],
+        scripts=['examples/tshark3.py',
+            'examples/tshark2.py',
+            'examples/tshark.py',
+            'examples/tcpdump.py'],
         zip_safe=False)
