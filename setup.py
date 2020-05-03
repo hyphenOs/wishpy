@@ -57,17 +57,22 @@ elif major == 3:
 
     epan_ffi_module = 'wishpy/wireshark/src/wireshark3/epan/epan_builder.py:epan_ffi'
 
+libpcap_ffi_module = 'wishpy/libpcap/src/pcap_builder.py:libpcap_ffi'
 
 setup(name='wishpy',
         version='0.0.2',
         description='Python Bindings for Wireshark using CFFI',
         author='Abhijit Gadgil',
         author_email='gabhijit@iitbombay.org',
-        license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark'],
+        license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark', 'LICENSE-libpcap'],
         setup_requires=['cffi>=1.14.0'],
         cffi_modules=[
-            epan_ffi_module
+            epan_ffi_module,
+            libpcap_ffi_module
             ],
         packages=find_packages(), #exclude=('wishpy.wireshark.lib',)),
-        scripts=['examples/tshark3.py', 'examples/tshark2.py', 'examples/tshark.py'],
+        scripts=['examples/tshark3.py',
+            'examples/tshark2.py',
+            'examples/tshark.py',
+            'examples/tcpdump.py'],
         zip_safe=False)

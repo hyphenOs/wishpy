@@ -1,8 +1,9 @@
-Python Bindings for Wireshark
+Python Bindings for Wireshark and libpcap
 
-- Uses CFFI to generate Python bindings for wireshark
+- Uses CFFI to generate Python bindings for wireshark and libpcap
 - You can write applications like `tshark` in Python
-- Makes wireshark's dissectors available in Python
+- Makes wireshark's dissectors available in Python and makes libpcap
+  easily available in Python for packet capture
 
 - Very very early still
 
@@ -61,6 +62,10 @@ wishpy/
       ...
     lib/
       ...
+  libpcap/
+    src/
+    lib/
+    ...
 ```
 The `src` directory above is essentially, a source code for generating the
 `lib` directory during run-time. In future, we'll have `sdist` only package
@@ -72,3 +77,6 @@ We have started with some very 'basic' Dissector API. See `examples/tshark.py` t
 This API is very early (in fact this is not really an API, but just a hint about what API might look like.)
 and definitely is going to change.
 
+
+Also a very quick - how to perform packet capture on the interface code called `tcpdump.py` is available.
+This is just a very basic wrapper over the lib.
