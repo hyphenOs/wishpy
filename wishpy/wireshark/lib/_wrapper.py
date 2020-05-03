@@ -1,3 +1,12 @@
+"""
+wrapper library to actual wireshark bindings. Should not be used directly.
+
+As support for more 'wireshark' features gets added, the support will be added
+in the _wrapper and other APIs (like WishpyDissector) will make use of that
+support. This abstracts out Wireshark 2.6 and Wireshark 3.2 specific
+API calls.
+"""
+
 import os
 
 try:

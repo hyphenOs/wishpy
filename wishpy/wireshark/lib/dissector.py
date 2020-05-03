@@ -1,5 +1,9 @@
+"""
+Our Dissector API.
+"""
 import socket
 import struct
+import json
 
 from ._wrapper import *
 
@@ -16,7 +20,9 @@ class WishpyErrorWthOpen(Exception):
 _EPAN_LIB_INITIALIZED = False
 
 class WishpyDissector:
-
+    """ A Class that wraps the underlying dissector from epan module of
+    `libwireshark`. Right now this simply prints the dissector tree.
+    """
 
     # Below are some dict's required for printing few packet types
     hfbases = {
@@ -38,6 +44,7 @@ class WishpyDissector:
 
     @classmethod
     def epan_ether_to_str(cls, fvalue, ftype, display):
+        """ Converting Ethernet addresses to String"""
 
         eth_bytes = fvalue.value.bytes
 
@@ -52,12 +59,14 @@ class WishpyDissector:
 
     @classmethod
     def epan_str_to_str(cls, fvalue, ftype, display):
+        """Converting epan 'char *' to Python String"""
 
         value = fvalue.value.string
         return epan_ffi.string(value).decode()
 
     @classmethod
     def epan_ipv4_to_str(cls, fvalue, ftype, display):
+        """Converting IP Address to Python String"""
 
         ipv4 = fvalue.value.ipv4
 
@@ -65,6 +74,7 @@ class WishpyDissector:
 
     @classmethod
     def epan_bool_to_str(cls, fvalue, ftype, display, on_off=False, json_compat=True):
+        """ Converting `gboolean` to String"""
 
         if on_off and json_compat:
             raise ValueError("Specify Either on_off or json_compat not both.")
@@ -86,6 +96,7 @@ class WishpyDissector:
 
     @classmethod
     def epan_int_to_str(cls, fvalue, ftype, display):
+        """Converting Integer to String, using BASE_* property."""
 
         try:
             # We are not displaying 'Extended string for the value
@@ -156,6 +167,8 @@ class WishpyDissector:
 
     @classmethod
     def print_dissected_tree(cls, node_ptr, data_ptr):
+        """
+        Returns a string that represents a dissected tree."""
 
         return_str = ""
 
@@ -212,16 +225,22 @@ class WishpyDissector:
 
     @classmethod
     def packet_to_json(cls, handle_ptr):
+        """ An example method that depicts how to use internal dissector API."""
 
         dissector = handle_ptr[0]
 
         # FIXME: following should be like json dumps
-        print(cls.print_dissected_tree(dissector.tree, epan_ffi.NULL))
+        json.loads(cls.print_dissected_tree(dissector.tree, epan_ffi.NULL)))
 
     def __init__(self, filename):
         self.__filename = filename
 
     def run(self):
+        """
+        Actual function that performs the Dissection. Right now since we are
+        only supporting dissecting packets from Wiretap supported files,
+        only dissects packets from a pcap(ish) file.
+        """
 
         if not _EPAN_LIB_INITIALIZED:
             raise WishpyEpanLibUninitializedError(
@@ -246,6 +265,11 @@ class WishpyDissector:
         return processed
 
 def setup_process():
+    """
+    This method should be called once per process (note: Not thread.) This
+    will perform underlying library initialization, so that eventually
+    dissectors can `run`.
+    """
 
     global _EPAN_LIB_INITIALIZED
 
@@ -258,6 +282,9 @@ def setup_process():
 
 
 def cleanup_process():
+    """
+    Per process cleanup. de-init of epan/wtap modules.
+    """
 
     perform_epan_wtap_cleanup()
 
