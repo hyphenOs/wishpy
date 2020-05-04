@@ -1,9 +1,12 @@
-This work is Copyright (C) Abhijit Gadgil 2020 - Now
+This work is Copyright (C) Abhijit Gadgil 2020
 
-Contains part of the code from the Wireshark project.
+Contains part of the code from the Wireshark project and libpcap project.
 
 Please Refer to Wireshark's Licence for Original Licensing of Wireshark,
-reproduced here for reference. (COPYING-Wireshark)
+attached here for reference. (COPYING-Wireshark)
 
 Please Refer to LICENCE File for using this. This follows a GPL
 Compatible LICENSE as required by Wireshark
+
+Please Refer to Licens File for Original libpcap, for Licensing of Libpcap,
+attachedk here for reference (LICENSE-libpcap)

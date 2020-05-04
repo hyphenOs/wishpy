@@ -3,7 +3,7 @@ __pycache__
 **/*pyc
 venv/**
 **/core
-**/*pcap*
+samples/*.pcap
 err
 dist
 build
