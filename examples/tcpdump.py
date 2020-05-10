@@ -44,7 +44,6 @@ then = dt.now()
 result = libpcap_lib.pcap_loop( pcap_handle, MAX_COUNT,
         wishpy_libpcap_handler, libpcap_ffi.NULL)
 
-print(result)
 now = dt.now()
 
 print(now - then)
