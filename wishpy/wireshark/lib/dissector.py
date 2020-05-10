@@ -230,7 +230,7 @@ class WishpyDissector:
         dissector = handle_ptr[0]
 
         # FIXME: following should be like json dumps
-        json.loads(cls.print_dissected_tree(dissector.tree, epan_ffi.NULL)))
+        json.loads(cls.print_dissected_tree(dissector.tree, epan_ffi.NULL))
 
     def __init__(self, filename):
         self.__filename = filename
