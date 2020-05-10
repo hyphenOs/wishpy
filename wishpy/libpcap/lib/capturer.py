@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 class WishpyCapturerOpenError(Exception):
     pass
 
+class WishpyCapturerCaptureError(Exception):
+    pass
+
 class WishpyCapturer:
     """ ase WishpyCapturer class.
 
@@ -113,11 +116,42 @@ class LibpcapCapturer(WishpyCapturer):
     def timeout(self):
         return self.__timeout
 
-    def start(self):
-        pass
+    def start(self, count=-1):
+        """ Starts capturing of the packets on our Interface.
+
+            Note: This is a blocking function and an application should
+            call this function from a separate thread of execution.
+            Calls internal `pcap_loop` function of libpcap.
+
+            Args:
+                count: (optional) if specified should be a positive integer
+                specifying maximum number of packets to be captured.
+
+            Returns:
+                On Success Nothing
+
+            Raises:
+                On Error Condition, `WishpyCapturerCaptureError`.
+        """
+
+        def capture_callback(user, hdr, data):
+            print("hdr", hdr[0].ts.tv_sec)
+            self.__queue.put((hdr, data,))
+
+        _cb = pcap_ffi.callback(
+                'void (*)(u_char *, const struct pcap_pkthdr *, const u_char *)',
+                capture_callback)
+
+        result = pcap_lib.pcap_loop(self.__pcap_handle, count,
+                _cb, pcap_ffi.NULL)
 
     def stop(self):
-        pass
+        """ Stops the capture.
+
+        Simply calls internal libpcap's `pcap_breakloop`
+        """
+
+        pcap_lib.pcap_breakloop(self.__pcap_handle)
 
     def open(self):
         """ Open's the Capturerer readying it for performing capture.
@@ -182,4 +216,5 @@ if __name__ == '__main__':
     c = LibpcapCapturer('wlp2s0', Queue())
     print(c)
     c.open()
+    c.start(count=1)
     c.close()
