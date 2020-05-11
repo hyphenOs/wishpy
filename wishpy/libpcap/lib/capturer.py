@@ -1,9 +1,20 @@
 """
-Capture Capture API using the libpcap.
+Capture API using the libpcap.
 
 """
+import logging
 
 
+from .libpcap_ext import lib as pcap_lib
+from .libpcap_ext import ffi as pcap_ffi
+
+logger = logging.getLogger(__name__)
+
+class WishpyCapturerOpenError(Exception):
+    pass
+
+class WishpyCapturerCaptureError(Exception):
+    pass
 
 class WishpyCapturer:
     """ ase WishpyCapturer class.
@@ -50,7 +61,8 @@ class LibpcapCapturer(WishpyCapturer):
         posted on the queue. Assume they are tuples like - (header, data)
     """
 
-    def __init__(self, iface, queue, snaplen=0, promisc=True, timeout=10):
+    def __init__(self, iface, queue,
+            snaplen=0, promisc=True, timeout=10, **kw):
         """Constructor
 
             Args:
@@ -70,6 +82,8 @@ class LibpcapCapturer(WishpyCapturer):
                          Default value is 10ms. Use lower values for more
                          'responsive' capture, higher values for larger
                          batches.
+                **kw:    Possible Keyword argument's that can be supported
+                         include 'maximum number of packets to capture etc.
         """
 
         self.__iface = iface
@@ -77,6 +91,8 @@ class LibpcapCapturer(WishpyCapturer):
         self.__snaplen = snaplen
         self.__promisc = promisc
         self.__timeout = timeout
+        self.__pcap_handle = None
+        self.__pcap_activated = False
 
     # Property Classes: All are read-only there is little value in making
     # these, read-write. For now at-least
@@ -100,17 +116,95 @@ class LibpcapCapturer(WishpyCapturer):
     def timeout(self):
         return self.__timeout
 
-    def start(self):
-        pass
+    def start(self, count=-1):
+        """ Starts capturing of the packets on our Interface.
+
+            Note: This is a blocking function and an application should
+            call this function from a separate thread of execution.
+            Calls internal `pcap_loop` function of libpcap.
+
+            Args:
+                count: (optional) if specified should be a positive integer
+                specifying maximum number of packets to be captured.
+
+            Returns:
+                On Success Nothing
+
+            Raises:
+                On Error Condition, `WishpyCapturerCaptureError`.
+        """
+
+        def capture_callback(user, hdr, data):
+            print("hdr", hdr[0].ts.tv_sec)
+            self.__queue.put((hdr, data,))
+
+        _cb = pcap_ffi.callback(
+                'void (*)(u_char *, const struct pcap_pkthdr *, const u_char *)',
+                capture_callback)
+
+        result = pcap_lib.pcap_loop(self.__pcap_handle, count,
+                _cb, pcap_ffi.NULL)
 
     def stop(self):
-        pass
+        """ Stops the capture.
+
+        Simply calls internal libpcap's `pcap_breakloop`
+        """
+
+        pcap_lib.pcap_breakloop(self.__pcap_handle)
 
     def open(self):
-        pass
+        """ Open's the Capturerer readying it for performing capture.
+
+            Calls libpcap's `pcap_create` and depending upon requested
+            parameters during the Constructor, those values are set and
+            finally activates the handle.
+        """
+
+        err_buff = pcap_ffi.new('char [256]')
+        handle = pcap_lib.pcap_create(self.__iface.encode(), err_buff)
+        if handle is None:
+            err_str = pcap_ffi.string(err_buff)
+            raise WishpyCapturerOpenError(err_str)
+
+        if self.__snaplen:
+            error = pcap_lib.pcap_set_snaplen(handle, self.__snaplen)
+            if error == pcap_lib.PCAP_ERROR_ACTIVATED:
+                raise WishpyCapturerOpenError("PCAP Handle already Activated.")
+
+        if self.__promisc:
+            error = pcap_lib.pcap_set_promisc(handle, 1)
+            if error == pcap_lib.PCAP_ERROR_ACTIVATED:
+                raise WishpyCapturerOpenError("PCAP Handle already Activated.")
+
+        if self.__timeout:
+            error = pcap_lib.pcap_set_timeout(handle, self.__timeout)
+            if error == pcap_lib.PCAP_ERROR_ACTIVATED:
+                raise WishpyCapturerOpenError("PCAP Handle already Activated.")
+
+        error = pcap_lib.pcap_activate(handle)
+        if error < 0:
+            self.close()
+
+            err_charptr = pcap_lib.pcap_geterr(handle)
+            err_str = pcap_ffi.string(err_charptr).decode()
+            raise WishpyCapturerOpenError("Failed to activate: {}".\
+                    format(err_str))
+
+        # FIXME: Warning to be reported
+        self.__pcap_activated = True
+        self.__pcap_handle = handle
 
     def close(self):
-        pass
+        """ Closes internal `libpcap` handle
+
+            libpcap's `pcap_close` function is called and our activated flag
+            is set to False.
+        """
+        if self.__pcap_handle is not None:
+            pcap_lib.pcap_close(self.__pcap_handle)
+        self.__pcap_activated = False
+        self.__pcap_handle = None
 
     def __repr__(self):
         return "LibpcapCapturer iface:{}, snaplen:{}, promisc:{}, timeout:{}".\
@@ -119,5 +213,8 @@ class LibpcapCapturer(WishpyCapturer):
 
 if __name__ == '__main__':
     from queue import Queue
-    c = LibpcapCapturer('eth0', Queue())
+    c = LibpcapCapturer('wlp2s0', Queue())
     print(c)
+    c.open()
+    c.start(count=1)
+    c.close()
