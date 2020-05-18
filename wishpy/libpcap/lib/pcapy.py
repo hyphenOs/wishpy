@@ -3,6 +3,7 @@ pcapy compatible API
 
 This module provides `pcapy` (https://github.com/helpsystems/pcapy)
 """
+import warnings
 
 from .libpcap_ext import lib as _pcap_lib
 from .libpcap_ext import ffi as _pcap_ffi
@@ -16,12 +17,46 @@ def open_offline(filename):
 
 
 def lookupdev():
-    pass
+    """Returns a device suitable for packet capture.
+
+    This function is actually deprecated, but only supported for the
+    existing users of `lookupdev`. Internally calls `findalldevs` and
+    returns the name of the first device returned by that call.
+    """
+
+    message = "`lookupdev` is deprecated. Use `findalldevs` and the first "\
+            "device returned by `findalldevs`."
+    warnings.warn(message, DeprecationWarning, stacklevel=2)
+
+    interfaces = findalldevs()
+    if len(interfaces) > 0:
+        return interfaces[0]
+    else:
+        return None
 
 
 def findalldevs():
-    pass
+    """ Return's a 'list' of names of devices for packet capture.
 
+    This function is a wrapeprover pcap_findalldevs.
+    """
+
+    err_buf = _pcap_ffi.new('char [256]')
+    interfaces = _pcap_ffi.new('pcap_if_t **')
+    result = _pcap_lib.pcap_findalldevs(interfaces, err_buf)
+    if result != 0:
+        raise PcapError(_pcap_ffi.string(err_buf).decode())
+
+    interface_names = []
+    iface = interfaces[0][0]
+    while iface != _pcap_ffi.NULL:
+        name = _pcap_ffi.string(iface.name).decode()
+        interface_names.append(name)
+        iface = iface.next
+
+    _pcap_lib.pcap_freealldevs(interfaces[0])
+
+    return interface_names
 
 def compile():
     pass
@@ -148,3 +183,5 @@ if __name__ == '__main__':
     print(ph.getlen())
     print(ph.getcaplen())
 
+    print(lookupdev())
+    print(findalldevs())
