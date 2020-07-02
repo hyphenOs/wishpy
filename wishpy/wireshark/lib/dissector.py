@@ -62,7 +62,20 @@ class WishpyDissector:
         """Converting epan 'char *' to Python String"""
 
         value = fvalue.value.string
-        return epan_ffi.string(value).decode()
+
+        # If display is BASE_NONE, utf-8 is fine, but for others, not always! (GSM-Unicode)
+        if display == 0:
+            x = epan_ffi.string(value).decode("utf-8").\
+                    replace('\\', '\\\\').\
+                    replace('"', '\\"')
+            return x
+        else:
+            try:
+                x = epan_ffi.string(value).decode("utf-8").\
+                        replace('\\', '\\\\').\
+                        replace('"', '\\"')
+            except:
+                return "Cannot Decode"
 
     @classmethod
     def epan_ipv4_to_str(cls, fvalue, ftype, display):
@@ -161,7 +174,7 @@ class WishpyDissector:
             return cls.epan_bytes_to_str(fvalue, ftype, display)
 
         if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
-            return ""
+            return "null"
 
         return "{} {}".format(ftype, display)
 
@@ -189,6 +202,8 @@ class WishpyDissector:
             finfo_display_str = cls.value_to_str(finfo)
             if finfo_display_str:
                 finfo_display_str = "\"{!s}\"".format(finfo_display_str)
+            else:
+                finfo_display_str = "\"\""
         else:
             finfo_display_str = ""
 
@@ -231,6 +246,13 @@ class WishpyDissector:
 
         # FIXME: following should be like json dumps
         json.loads(cls.print_dissected_tree(dissector.tree, epan_ffi.NULL))
+        s = cls.print_dissected_tree(dissector.tree, epan_ffi.NULL)
+        try:
+            x = json.loads(s, strict=False)
+        except Exception as e:
+            print(s)
+            print((e.doc, e.msg))
+            raise
 
     def __init__(self, filename):
         self.__filename = filename
