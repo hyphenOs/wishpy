@@ -1,7 +1,6 @@
 from wishpy.wireshark.src.wireshark2.epan.epan import (
         epan_ffi,
         _sources,
-        _extra_link_args,
         _extra_compile_args)
 
 if __name__ == '__main__':
