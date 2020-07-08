@@ -135,7 +135,6 @@ class LibpcapCapturer(WishpyCapturer):
         """
 
         def capture_callback(user, hdr, data):
-            print("hdr", hdr[0].ts.tv_sec)
             self.__queue.put((hdr, data,))
 
         _cb = pcap_ffi.callback(

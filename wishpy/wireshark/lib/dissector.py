@@ -258,6 +258,8 @@ class WishpyDissectorBase:
         raise NotImplemented("Derived Classes need to implement this.")
 
 class WishpyDissectorFile(WishpyDissectorBase):
+    """Dissector class for PCAP Files.
+    """
 
     def __init__(self, filename):
         self.__filename = filename
@@ -290,6 +292,60 @@ class WishpyDissectorFile(WishpyDissectorBase):
         wtap_close(wth)
 
         return processed
+
+class WishpyDissectorQueue(WishpyDissectorBase):
+    """Dissector class for packets received from a Queue(ish) object.
+    """
+
+    def fetch(self):
+        """Implement this function to fetch a single packet from the queue.
+
+        Implementation of this function should return the object of the type
+        `Hdr` and PacketData`
+        """
+        raise NotImplemented("Derived Classes Need to implement this.")
+
+
+
+class WishpyDissectorQueuePython(WishpyDissectorQueue):
+
+    def __init__(self, queue):
+        self.__queue = queue
+
+    def fetch(self):
+        """Blocking Fetch from a Python Queue.
+        """
+        hdr, data = self.__queue.get()
+        return hdr, data
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        """Returns next `fetch`ed packet. (Blocking)
+        """
+        # TODO : perform actual dissection
+        return self.fetch()
+
+    def run(self, count=0):
+        """yield's the packet, up to maximum of `count` packets.
+
+        if count is <= 0, infinite iterator.
+        """
+
+        fetched = 0
+        while True:
+            hdr, data = self.__next__()
+
+            fetched += 1
+            x = yield (hdr, data)
+
+            if x and x.lower() == 'stop':
+                return
+
+            if fetched == count:
+                return
+
 
 def setup_process():
     """
