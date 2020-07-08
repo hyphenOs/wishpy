@@ -8,7 +8,10 @@ import threading
 MAX_COUNT = -1
 
 from wishpy.libpcap.lib.capturer import LibpcapCapturer
-from wishpy.wireshark.lib.dissector import WishpyDissectorQueuePython
+from wishpy.wireshark.lib.dissector import (
+        WishpyDissectorQueuePython,
+        setup_process,
+        cleanup_process)
 
 then = dt.now()
 
@@ -20,17 +23,20 @@ capture_thread = threading.Thread(target=c.start, args=(MAX_COUNT,))
 capture_thread.start()
 
 
+setup_process()
+
 d = WishpyDissectorQueuePython(packet_queue)
 packet_generator = d.run()
 
 while True:
     try:
-        hdr, data = next(packet_generator)
+        hdr, data, dissected = next(packet_generator)
 
         pktlen, caplen = hdr[0].len, hdr[0].caplen
 
         total_sec = hdr[0].ts.tv_sec + hdr[0].ts.tv_usec/1000000
 
+        print(dissected)
         print(dt.strftime(dt.fromtimestamp(total_sec), '%H:%M:%S.%f'),
                 pktlen, caplen, binascii.hexlify(bytes(data[0:caplen])))
     except StopIteration:
@@ -40,7 +46,8 @@ while True:
         try:
             packet_generator.send('stop')
         except StopIteration:
-            pass
+            break
+
 
 c.stop()
 now = dt.now()
@@ -48,4 +55,4 @@ now = dt.now()
 capture_thread.join()
 
 print(now - then)
-
+cleanup_process()

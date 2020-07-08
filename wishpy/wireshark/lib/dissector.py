@@ -254,6 +254,8 @@ class WishpyDissectorBase:
             print((e.doc, e.msg))
             raise
 
+        return x
+
     def run(self, *args, **kw):
         raise NotImplemented("Derived Classes need to implement this.")
 
@@ -338,7 +340,8 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
             hdr, data = self.__next__()
 
             fetched += 1
-            x = yield (hdr, data)
+            d = epan_perform_one_packet_dissection(hdr, data, self.packet_to_json)
+            x = yield (hdr, data, d)
 
             if x and x.lower() == 'stop':
                 return
