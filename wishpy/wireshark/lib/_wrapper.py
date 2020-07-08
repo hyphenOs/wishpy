@@ -70,7 +70,7 @@ def _epan_init_v3():
 
     return result
 
-def _epan_perform_dissection_v2(wth, wth_file_type, cb_func):
+def _epan_perform_dissection_v2(wth, wth_file_type, cb_func, count=0):
     """
     Performs dissection of the file bound to `wth`
     """
@@ -142,9 +142,10 @@ def _epan_perform_dissection_v2(wth, wth_file_type, cb_func):
 
     return processed
 
-def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
+def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0):
     """
-    Performs dissection of the file bound to `wth`
+    Performs dissection of the file bound to `wth`. If Non-zero positive count
+    is specified, performs dissection of up to `count` packets
     """
     #empty_packet_provider_funcs = epan_ffi.new('struct packet_provider_funcs *')
     epan_session = epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
@@ -172,7 +173,6 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
         result = epan_lib.wtap_read(wth, rec, buf, err, err_str, offset)
 
         if result == True:
-            processed += 1
 
             pkt_len = rec.rec_header.packet_header.len
             pkt_reported_len = rec.rec_header.packet_header.caplen
@@ -207,6 +207,9 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
             epan_lib.epan_dissect_reset(epan_dissect_obj)
 
             processed += 1
+
+            if processed == count:
+                break
 
         else:
             break

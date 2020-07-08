@@ -19,7 +19,7 @@ class WishpyErrorWthOpen(Exception):
 
 _EPAN_LIB_INITIALIZED = False
 
-class WishpyDissector:
+class WishpyDissectorBase:
     """ A Class that wraps the underlying dissector from epan module of
     `libwireshark`. Right now this simply prints the dissector tree.
     """
@@ -254,10 +254,15 @@ class WishpyDissector:
             print((e.doc, e.msg))
             raise
 
+    def run(self, *args, **kw):
+        raise NotImplemented("Derived Classes need to implement this.")
+
+class WishpyDissectorFile(WishpyDissectorBase):
+
     def __init__(self, filename):
         self.__filename = filename
 
-    def run(self):
+    def run(self, count=0):
         """
         Actual function that performs the Dissection. Right now since we are
         only supporting dissecting packets from Wiretap supported files,
@@ -280,7 +285,7 @@ class WishpyDissector:
 
 
         processed = epan_perform_dissection(wth, wth_filetype,
-                self.packet_to_json)
+                self.packet_to_json, count)
 
         wtap_close(wth)
 
@@ -314,4 +319,4 @@ def cleanup_process():
     _EPAN_LIB_INITIALIZED = False
 
 
-__all__ = [WishpyDissector]
+__all__ = ['WishpyDissectorFile']
