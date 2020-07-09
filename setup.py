@@ -60,7 +60,7 @@ elif major == 3:
 libpcap_ffi_module = 'wishpy/libpcap/src/pcap_builder.py:libpcap_ffi'
 
 setup(name='wishpy',
-        version='0.0.3',
+        version='0.0.4',
         description='Python Bindings for Wireshark using CFFI',
         author='Abhijit Gadgil',
         author_email='gabhijit@iitbombay.org',

@@ -8,6 +8,7 @@ API calls.
 """
 
 import os
+import binascii
 
 try:
     from .epan2_ext import lib as epan_lib
@@ -70,7 +71,10 @@ def _epan_init_v3():
 
     return result
 
-def _epan_perform_dissection_v2(wth, wth_file_type, cb_func):
+def _epan_perform_one_packet_dissection_v2(epan_session, hdr, packet_data, cb_func):
+    raise NotImplemented
+
+def _epan_perform_dissection_v2(wth, wth_file_type, cb_func, count=0):
     """
     Performs dissection of the file bound to `wth`
     """
@@ -142,9 +146,84 @@ def _epan_perform_dissection_v2(wth, wth_file_type, cb_func):
 
     return processed
 
-def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
+def _epan_perform_one_packet_dissection_v3(hdr, packet_data, cb_func):
+    """Performs a single packet dissection.
     """
-    Performs dissection of the file bound to `wth`
+
+    # FIXME : hardcoded
+    wth_file_type = 1
+    total_bytes = 0
+    # FIXME: epan_session and epan_dissect_obj to be set by caller? So that
+    # We don't free on every data.
+    epan_session = epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
+
+    epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
+
+    offset = epan_ffi.new('gint64 *')
+    frame_data_ref = epan_ffi.new('frame_data **')
+    elapsed_time_ptr = epan_ffi.new('nstime_t *')
+
+    buf = epan_ffi.new('Buffer *')
+    epan_lib.ws_buffer_init(buf, 1514) # FIXME : Should do with proper length
+    start_ptr = buf[0].data + buf[0].start
+
+    rec = epan_ffi.new('wtap_rec *')
+    epan_lib.wtap_rec_init(rec)
+
+    err = epan_ffi.new('int *')
+    err_str = epan_ffi.new("gchar **")
+
+    frame_data_ref[0] = epan_ffi.NULL
+    frame_data_ptr = epan_ffi.new('frame_data *')
+    cum_bytes = epan_ffi.new('guint32 *')
+
+    packet_len = hdr[0].len
+    packet_capture_len = hdr[0].caplen
+
+    rec[0].rec_header.packet_header.len = packet_len
+    rec[0].rec_header.packet_header.caplen = packet_capture_len
+    rec[0].rec_header.packet_header.pkt_encap = 1 # FIXME: Hard coded
+
+    epan_lib.frame_data_init(frame_data_ptr, 0, rec, offset[0], cum_bytes[0])
+
+    total_bytes += packet_capture_len
+    cum_bytes[0] = total_bytes
+
+    # Copy from the data to us
+    epan_ffi.memmove(start_ptr, packet_data, packet_capture_len)
+
+    # FIXME: Look at properly using `frame_data_ref`
+    epan_lib.frame_data_set_before_dissect(frame_data_ptr,
+            elapsed_time_ptr, frame_data_ref, epan_ffi.NULL)
+
+    # Not sure what this is - Just copied from `tshark` sources
+    epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
+            epan_dissect_obj)
+
+    ## Do actual dissection here.
+    # Get buffer and tvbuff first and then run dissector
+    tvb_ptr = epan_lib.tvb_new_real_data(buf[0].data, packet_len,
+            packet_capture_len)
+
+    epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type,
+            rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
+
+    dissected = cb_func(epan_dissect_obj)
+
+    # Reset the frame data and dissector object
+    epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
+    epan_lib.epan_dissect_reset(epan_dissect_obj)
+
+    epan_lib.epan_dissect_free(epan_dissect_obj)
+    epan_lib.epan_free(epan_session)
+
+    return dissected
+
+
+def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0):
+    """
+    Performs dissection of the file bound to `wth`. If Non-zero positive count
+    is specified, performs dissection of up to `count` packets
     """
     #empty_packet_provider_funcs = epan_ffi.new('struct packet_provider_funcs *')
     epan_session = epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
@@ -172,21 +251,19 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
         result = epan_lib.wtap_read(wth, rec, buf, err, err_str, offset)
 
         if result == True:
-            processed += 1
 
-            pkt_len = rec.rec_header.packet_header.len
-            pkt_reported_len = rec.rec_header.packet_header.caplen
-
+            pkt_len = rec[0].rec_header.packet_header.len
+            pkt_reported_len = rec[0].rec_header.packet_header.caplen
 
             epan_lib.frame_data_init(frame_data_ptr, processed, rec,
                     offset[0], cum_bytes[0])
 
             total_bytes += pkt_reported_len
             cum_bytes[0] = total_bytes
+
             # FIXME: Look at properly using `frame_data_ref`
             epan_lib.frame_data_set_before_dissect(frame_data_ptr,
                     elapsed_time_ptr, frame_data_ref, epan_ffi.NULL)
-
 
             # Not sure what this is - Just copied from `tshark` sources
             epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
@@ -207,6 +284,9 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func):
             epan_lib.epan_dissect_reset(epan_dissect_obj)
 
             processed += 1
+
+            if processed == count:
+                break
 
         else:
             break
@@ -244,9 +324,11 @@ epan_cleanup = epan_lib.epan_cleanup
 if _epan_version == (2,6):
     epan_lib_init = _epan_init_v2
     epan_perform_dissection = _epan_perform_dissection_v2
+    epan_perform_one_packet_dissection = _epan_perform_one_packet_dissection_v2
 else:
     epan_lib_init = _epan_init_v3
     epan_perform_dissection = _epan_perform_dissection_v3
+    epan_perform_one_packet_dissection = _epan_perform_one_packet_dissection_v3
 
 def perform_epan_wtap_init():
 
