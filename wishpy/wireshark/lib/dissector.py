@@ -26,15 +26,15 @@ class WishpyDissectorBase:
 
     # Below are some dict's required for printing few packet types
     hfbases = {
-            epan_lib.BASE_NONE : '{:d}', # Not sure how this is to be treated
-            epan_lib.BASE_DEC : '{:d}',
-            epan_lib.BASE_HEX : '0x{:x}',
-            epan_lib.BASE_OCT : '{:o}',
-            epan_lib.BASE_DEC_HEX: '{:d}(0x{:x})',
-            epan_lib.BASE_HEX_DEC: '0x{:x}({:d})',
-            epan_lib.BASE_PT_TCP: '{:d}',
-            epan_lib.BASE_PT_UDP: '{:d}',
-            epan_lib.BASE_PT_SCTP: '{:d}'
+            epan_lib.BASE_NONE : ('{:d}', False), # Not sure how this is to be treated
+            epan_lib.BASE_DEC : ('{:d}', False),
+            epan_lib.BASE_HEX : ('0x{:x}', True),
+            epan_lib.BASE_OCT : ('{:o}', True),
+            epan_lib.BASE_DEC_HEX: ('{:d}(0x{:x})', True),
+            epan_lib.BASE_HEX_DEC: ('0x{:x}({:d})', True),
+            epan_lib.BASE_PT_TCP: ('{:d}', False),
+            epan_lib.BASE_PT_UDP: ('{:d}', False),
+            epan_lib.BASE_PT_SCTP: ('{:d}', False)
 
             }
 
@@ -53,7 +53,7 @@ class WishpyDissectorBase:
             display_byte = "{:02X}".format(eth_bytes.data[i])
             display_bytes.append(display_byte)
 
-        return ":".join(display_bytes)
+        return ":".join(display_bytes), True
 
     epan_bytes_to_str = epan_ether_to_str
 
@@ -68,12 +68,13 @@ class WishpyDissectorBase:
             x = epan_ffi.string(value).decode("utf-8").\
                     replace('\\', '\\\\').\
                     replace('"', '\\"')
-            return x
+            return repr(x), True
         else:
             try:
                 x = epan_ffi.string(value).decode("utf-8").\
                         replace('\\', '\\\\').\
                         replace('"', '\\"')
+                return repr(x), True
             except:
                 return "Cannot Decode"
 
@@ -83,7 +84,7 @@ class WishpyDissectorBase:
 
         ipv4 = fvalue.value.ipv4
 
-        return socket.inet_ntoa(struct.pack('!I', ipv4.addr))
+        return socket.inet_ntoa(struct.pack('!I', ipv4.addr)), True
 
     @classmethod
     def epan_bool_to_str(cls, fvalue, ftype, display, on_off=False, json_compat=True):
@@ -96,14 +97,14 @@ class WishpyDissectorBase:
 
         if value:
             if json_compat:
-                return "true"
+                return "true", False
             if on_off:
-                return "ON"
+                return "ON", True
         else:
             if json_compat:
-                return "false"
+                return "false", False
             if on_off:
-                return "OFF"
+                return "OFF", True
 
         return "{}".format(value)
 
@@ -116,12 +117,17 @@ class WishpyDissectorBase:
             if display & epan_lib.BASE_EXT_STRING:
                 display ^= epan_lib.BASE_EXT_STRING
 
-            base_format = cls.hfbases[display]
+            base_format, quote = cls.hfbases[display]
         except:
-            return "type: {} display: {} Not Supported".format(ftype, display)
+            return "type: {} display: {} Not Supported".format(ftype, display), True
 
         return base_format.format(fvalue.value.uinteger,
-                fvalue.value.uinteger)
+                fvalue.value.uinteger), quote
+
+    @classmethod
+    def epan_reltime_to_str(cls, fvalue, ftype, display):
+        value = fvalue.value.time
+        return "{:.9f}".format(value.secs + value.nsecs / 1000000000), False
 
     @classmethod
     def value_to_str(cls, finfo):
@@ -132,6 +138,7 @@ class WishpyDissectorBase:
         fvalue = finfo.value
         ftype = finfo.hfinfo[0].type
         display = finfo.hfinfo[0].display
+        abbrev = epan_ffi.string(finfo.hfinfo[0].abbrev).decode()
 
         epan_int_types = [
                 epan_lib.FT_INT8,
@@ -173,10 +180,13 @@ class WishpyDissectorBase:
         if ftype == epan_lib.FT_BYTES:
             return cls.epan_bytes_to_str(fvalue, ftype, display)
 
-        if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
-            return "null"
+        if ftype == epan_lib.FT_RELATIVE_TIME:
+            return cls.epan_reltime_to_str(fvalue, ftype, display)
 
-        return "{} {}".format(ftype, display)
+        if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
+            return None, False
+
+        return "{} {}".format(ftype, display), True
 
     @classmethod
     def print_dissected_tree(cls, node_ptr, data_ptr):
@@ -199,15 +209,15 @@ class WishpyDissectorBase:
             abbrev = epan_ffi.string(hfinfo.abbrev).decode()
             abbrev_str = "\"{!s}\"".format(abbrev)
             return_str += abbrev_str + ": "
-            finfo_display_str = cls.value_to_str(finfo)
+            finfo_display_str, quote = cls.value_to_str(finfo)
             if finfo_display_str:
-                finfo_display_str = "\"{!s}\"".format(finfo_display_str)
-            else:
-                finfo_display_str = "\"\""
+                if quote:
+                    finfo_display_str = "\"{!s}\"".format(finfo_display_str)
         else:
             finfo_display_str = ""
 
-        return_str += finfo_display_str
+        if finfo_display_str is not None:
+            return_str += finfo_display_str
 
         data_ptr_new = epan_ffi.new('int *')
         data_ptr_new[0] = level + 1
@@ -233,6 +243,9 @@ class WishpyDissectorBase:
             return_str += "\n"
             return_str += "  " * (level-1)
             return_str += "}"
+        else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
+            if not finfo_display_str:
+                return_str += "\"\""
         if node.next != epan_ffi.NULL:
             return_str += ",\n"
 
@@ -245,16 +258,14 @@ class WishpyDissectorBase:
         dissector = handle_ptr[0]
 
         # FIXME: following should be like json dumps
-        json.loads(cls.print_dissected_tree(dissector.tree, epan_ffi.NULL))
         s = cls.print_dissected_tree(dissector.tree, epan_ffi.NULL)
         try:
             x = json.loads(s, strict=False)
         except Exception as e:
             print(s)
-            print((e.doc, e.msg))
-            raise
+            return ""
 
-        return x
+        return s
 
     def run(self, *args, **kw):
         raise NotImplemented("Derived Classes need to implement this.")
@@ -282,7 +293,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
         # to the Exception handler
 
         # FIXME: Do this as a context manager
-        print ("before wtap_open_file_offline")
+        #print ("before wtap_open_file_offline")
         wth, wth_filetype = wtap_open_file_offline(self.__filename)
         if wth is None:
             raise WishpyErrorWthOpen()

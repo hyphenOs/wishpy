@@ -37,8 +37,8 @@ while True:
         total_sec = hdr[0].ts.tv_sec + hdr[0].ts.tv_usec/1000000
 
         print(dissected)
-        print(dt.strftime(dt.fromtimestamp(total_sec), '%H:%M:%S.%f'),
-                pktlen, caplen, binascii.hexlify(bytes(data[0:caplen])))
+        #print(dt.strftime(dt.fromtimestamp(total_sec), '%H:%M:%S.%f'),
+        #        pktlen, caplen, binascii.hexlify(bytes(data[0:caplen])))
     except StopIteration:
         break
     except KeyboardInterrupt:
@@ -54,5 +54,5 @@ now = dt.now()
 
 capture_thread.join()
 
-print(now - then)
+#print(now - then)
 cleanup_process()

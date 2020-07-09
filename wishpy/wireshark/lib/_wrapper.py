@@ -184,7 +184,6 @@ def _epan_perform_one_packet_dissection_v3(hdr, packet_data, cb_func):
     rec[0].rec_header.packet_header.caplen = packet_capture_len
     rec[0].rec_header.packet_header.pkt_encap = 1 # FIXME: Hard coded
 
-    print(rec[0].rec_header.packet_header.len)
     epan_lib.frame_data_init(frame_data_ptr, 0, rec, offset[0], cum_bytes[0])
 
     total_bytes += packet_capture_len
@@ -316,7 +315,6 @@ def wtap_open_file_offline(filepath):
         return None, None
 
     wtap_file_type = epan_lib.wtap_file_type_subtype(wth)
-    print(wtap_file_type)
     return wth, wtap_file_type
 
 wtap_close = epan_lib.wtap_close
