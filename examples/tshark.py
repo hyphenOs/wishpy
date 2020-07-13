@@ -24,14 +24,13 @@ if __name__ == '__main__':
     dissector = WishpyDissectorFile(input_filepath)
 
     then = dt.now()
-    processed = dissector.run(0)
-    now = dt.now()
-    #print("processed {} packets in {}".format(processed, now - then))
 
-    #print("Performing dissection again to make sure the `epan` state is fine.")
-    then = dt.now()
-    processed = dissector.run(1)
-    now = dt.now()
-    #print("processed {} packets in {}".format(processed, now - then))
+    try:
+        for dissected in dissector.run(count=0, skip=0):
+            print(dissected)
 
-    cleanup_process()
+    except KeyboardInterrupt:
+        cleanup_process()
+
+    now = dt.now()
+

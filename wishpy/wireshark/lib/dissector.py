@@ -268,6 +268,17 @@ class WishpyDissectorBase:
         return s
 
     def run(self, *args, **kw):
+        """A generator function `yield`ing at-least the dissected packets.
+
+        Implementing this as a generator function helps one to run code
+        that looks like
+
+        >>> for dissected in dissector.run(count=1):
+            # do stuff with the dissected packet
+
+        This is particularly convenient while performing live capture on
+        an interface or dissecting a huge file.
+        """
         raise NotImplemented("Derived Classes need to implement this.")
 
 class WishpyDissectorFile(WishpyDissectorBase):
@@ -277,7 +288,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
     def __init__(self, filename):
         self.__filename = filename
 
-    def run(self, count=0):
+    def run(self, count=0, skip=-1):
         """
         Actual function that performs the Dissection. Right now since we are
         only supporting dissecting packets from Wiretap supported files,
@@ -298,13 +309,16 @@ class WishpyDissectorFile(WishpyDissectorBase):
         if wth is None:
             raise WishpyErrorWthOpen()
 
+        try:
+            yield from epan_perform_dissection(wth, wth_filetype,
+                    self.packet_to_json, count, skip)
+        except:
+            pass
+        finally:
+            # If we don't close `wtap` here, outer `cleanup_process` croaks
+            wtap_close(wth)
 
-        processed = epan_perform_dissection(wth, wth_filetype,
-                self.packet_to_json, count)
-
-        wtap_close(wth)
-
-        return processed
+        return
 
 class WishpyDissectorQueue(WishpyDissectorBase):
     """Dissector class for packets received from a Queue(ish) object.
@@ -317,7 +331,6 @@ class WishpyDissectorQueue(WishpyDissectorBase):
         `Hdr` and PacketData`
         """
         raise NotImplemented("Derived Classes Need to implement this.")
-
 
 
 class WishpyDissectorQueuePython(WishpyDissectorQueue):
@@ -337,8 +350,16 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
     def __next__(self):
         """Returns next `fetch`ed packet. (Blocking)
         """
-        # TODO : perform actual dissection
-        return self.fetch()
+        return self._dissect_one_packet()
+
+
+    def _dissect_one_packet(self):
+
+        hdr, data = self.fetch()
+        d = epan_perform_one_packet_dissection(hdr, data,
+                self.packet_to_json)
+
+        return hdr, data, d
 
     def run(self, count=0):
         """yield's the packet, up to maximum of `count` packets.
@@ -348,10 +369,10 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
         fetched = 0
         while True:
-            hdr, data = self.__next__()
+            hdr, data, d = self._dissect_one_packet()
 
             fetched += 1
-            d = epan_perform_one_packet_dissection(hdr, data, self.packet_to_json)
+
             x = yield (hdr, data, d)
 
             if x and x.lower() == 'stop':
@@ -389,4 +410,5 @@ def cleanup_process():
     _EPAN_LIB_INITIALIZED = False
 
 
-__all__ = ['WishpyDissectorFile']
+__all__ = ['WishpyDissectorFile', 'WishpyDissectorQueue',
+        'WishpyDissectorQueuePython']

@@ -25,29 +25,19 @@ capture_thread.start()
 
 setup_process()
 
-d = WishpyDissectorQueuePython(packet_queue)
-packet_generator = d.run()
+dissector = WishpyDissectorQueuePython(packet_queue)
 
-while True:
-    try:
-        hdr, data, dissected = next(packet_generator)
 
-        pktlen, caplen = hdr[0].len, hdr[0].caplen
+try:
 
-        total_sec = hdr[0].ts.tv_sec + hdr[0].ts.tv_usec/1000000
-
+    for _, _, dissected in dissector.run(count=100):
         print(dissected)
-        #print(dt.strftime(dt.fromtimestamp(total_sec), '%H:%M:%S.%f'),
-        #        pktlen, caplen, binascii.hexlify(bytes(data[0:caplen])))
-    except StopIteration:
-        break
-    except KeyboardInterrupt:
-        print("User interrupted.")
-        try:
-            packet_generator.send('stop')
-        except StopIteration:
-            break
 
+except KeyboardInterrupt:
+    print("User interrupted.")
+
+finally:
+    cleanup_process()
 
 c.stop()
 now = dt.now()
@@ -55,4 +45,3 @@ now = dt.now()
 capture_thread.join()
 
 #print(now - then)
-cleanup_process()
