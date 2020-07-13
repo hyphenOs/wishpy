@@ -130,7 +130,7 @@ def _epan_perform_dissection_v2(wth, wth_file_type, cb_func, count=0):
             epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type,
                     epan_rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
-            cb_func(epan_dissect_obj)
+            dissected = cb_func(epan_dissect_obj)
 
             # Reset the frame data and dissector object
             epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
@@ -138,13 +138,16 @@ def _epan_perform_dissection_v2(wth, wth_file_type, cb_func, count=0):
 
             processed += 1
 
+            yield dissected
+
+            if processed == count:
+                break
+
         else:
             break
 
     epan_lib.epan_dissect_free(epan_dissect_obj)
     epan_lib.epan_free(epan_session)
-
-    return processed
 
 def _epan_perform_one_packet_dissection_v3(hdr, packet_data, cb_func):
     """Performs a single packet dissection.
@@ -220,7 +223,7 @@ def _epan_perform_one_packet_dissection_v3(hdr, packet_data, cb_func):
     return dissected
 
 
-def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0):
+def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0, skip=-1):
     """
     Performs dissection of the file bound to `wth`. If Non-zero positive count
     is specified, performs dissection of up to `count` packets
@@ -247,6 +250,7 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0):
     cum_bytes = epan_ffi.new('guint32 *')
     processed = 0
     total_bytes = 0
+    skipped = 0
     while True:
         result = epan_lib.wtap_read(wth, rec, buf, err, err_str, offset)
 
@@ -277,13 +281,19 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0):
             epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type,
                     rec, tvb_ptr, frame_data_ptr, epan_ffi.NULL)
 
-            cb_func(epan_dissect_obj)
+            if skipped < skip:
+                skipped += 1
+                continue
+
+            dissected = cb_func(epan_dissect_obj)
 
             # Reset the frame data and dissector object
             epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
             epan_lib.epan_dissect_reset(epan_dissect_obj)
 
             processed += 1
+
+            yield dissected
 
             if processed == count:
                 break
