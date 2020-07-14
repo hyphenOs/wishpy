@@ -324,11 +324,24 @@ class WishpyDissectorQueue(WishpyDissectorBase):
     """Dissector class for packets received from a Queue(ish) object.
     """
 
+    def dissect_one_packet(self):
+        """Dissects a single packet
+
+        This should typically call `fetch` and the perform dissection. All
+        the queue based `dissectors` will dissect one packet at a time, so
+        it's better that this function is in the base class.
+        """
+        hdr, data = self.fetch()
+        d = epan_perform_one_packet_dissection(hdr, data,
+                self.packet_to_json)
+
+        return hdr, data, d
+
     def fetch(self):
         """Implement this function to fetch a single packet from the queue.
 
         Implementation of this function should return the object of the type
-        `Hdr` and PacketData`
+        `Hdr` and `PacketData`
         """
         raise NotImplemented("Derived Classes Need to implement this.")
 
@@ -350,16 +363,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
     def __next__(self):
         """Returns next `fetch`ed packet. (Blocking)
         """
-        return self._dissect_one_packet()
-
-
-    def _dissect_one_packet(self):
-
-        hdr, data = self.fetch()
-        d = epan_perform_one_packet_dissection(hdr, data,
-                self.packet_to_json)
-
-        return hdr, data, d
+        return self.dissect_one_packet()
 
     def run(self, count=0):
         """yield's the packet, up to maximum of `count` packets.
@@ -369,7 +373,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
         fetched = 0
         while True:
-            hdr, data, d = self._dissect_one_packet()
+            hdr, data, d = self.dissect_one_packet()
 
             fetched += 1
 
