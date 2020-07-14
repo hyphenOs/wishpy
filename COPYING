@@ -1,6 +1,8 @@
-This work is Copyright (C) Abhijit Gadgil 2020
+This work is Copyright (C) hyphenOs Software Labs Pvt. Ltd. 2020-present
 
 Contains part of the code from the Wireshark project and libpcap project.
+
+Contains part of the code from pcapy bindings for libpcap.
 
 Please Refer to Wireshark's Licence for Original Licensing of Wireshark,
 attached here for reference. (COPYING-Wireshark)
@@ -8,5 +10,8 @@ attached here for reference. (COPYING-Wireshark)
 Please Refer to LICENCE File for using this. This follows a GPL
 Compatible LICENSE as required by Wireshark
 
-Please Refer to Licens File for Original libpcap, for Licensing of Libpcap,
-attachedk here for reference (LICENSE-libpcap)
+Please Refer to License File for Original libpcap, for Licensing of Libpcap,
+attached here for reference (LICENSE-libpcap)
+
+Please Refert to License File for pcapy, attached here for reference
+(LICENSE-pcapy)

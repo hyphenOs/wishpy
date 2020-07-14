@@ -9,6 +9,7 @@ API calls.
 
 import os
 import binascii
+import warnings
 
 try:
     from .epan2_ext import lib as epan_lib
