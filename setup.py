@@ -66,11 +66,12 @@ setup(name='wishpy',
         author_email='gabhijit@iitbombay.org',
         license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark', 'LICENSE-libpcap'],
         setup_requires=['cffi>=1.14.0'],
+        install_requires=['cffi>=1.14.0'],
         cffi_modules=[
             epan_ffi_module,
             libpcap_ffi_module
             ],
-        packages=find_packages(), #exclude=('wishpy.wireshark.lib',)),
+        packages=find_packages(),
         scripts=['examples/tshark3.py',
             'examples/tshark2.py',
             'examples/tshark.py',
