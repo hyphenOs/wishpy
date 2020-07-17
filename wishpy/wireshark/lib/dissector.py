@@ -350,6 +350,8 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
     def __init__(self, queue):
         self.__queue = queue
+        self.__running = False
+        self.__stop_requested = False
 
     def fetch(self):
         """Blocking Fetch from a Python Queue.
@@ -371,6 +373,8 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
         if count is <= 0, infinite iterator.
         """
 
+        self.__running = True
+
         fetched = 0
         while True:
             hdr, data, d = self.dissect_one_packet()
@@ -379,11 +383,20 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
             x = yield (hdr, data, d)
 
+            if self.__stop_requested == True:
+                return
+
             if x and x.lower() == 'stop':
                 return
 
             if fetched == count:
                 return
+
+        self.__running = False
+
+    def stop(self):
+        """Stop's the generator by setting internal state."""
+        self.__stop_requested = True
 
 
 def setup_process():
