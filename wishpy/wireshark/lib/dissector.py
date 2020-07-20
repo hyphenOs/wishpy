@@ -304,7 +304,6 @@ class WishpyDissectorFile(WishpyDissectorBase):
         # to the Exception handler
 
         # FIXME: Do this as a context manager
-        #print ("before wtap_open_file_offline")
         wth, wth_filetype = wtap_open_file_offline(self.__filename)
         if wth is None:
             raise WishpyErrorWthOpen()
@@ -312,7 +311,8 @@ class WishpyDissectorFile(WishpyDissectorBase):
         try:
             yield from epan_perform_dissection(wth, wth_filetype,
                     self.packet_to_json, count, skip)
-        except:
+        except Exception as e:
+            print(e)
             pass
         finally:
             # If we don't close `wtap` here, outer `cleanup_process` croaks
