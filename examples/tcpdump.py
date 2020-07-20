@@ -30,11 +30,14 @@ dissector = WishpyDissectorQueuePython(packet_queue)
 
 try:
 
-    for _, _, dissected in dissector.run(count=100):
+    for _, _, dissected in dissector.run(count=0):
         print(dissected)
 
 except KeyboardInterrupt:
     print("User interrupted.")
+
+except Exception as e:
+    print(e)
 
 finally:
     cleanup_process()
