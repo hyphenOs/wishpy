@@ -92,8 +92,18 @@ def _epan_perform_one_packet_dissection_v2(hdr, packet_data, cb_func):
     packet_len = hdr[0].len
     packet_capture_len = hdr[0].caplen
 
+    # Allocate enough space to 'copy'
+    count = packet_capture_len
+    if packet_capture_len > 1024:
+        count = 4096
+    if packet_capture_len > 4096:
+        count = 16384
+    if packet_capture_len > 16384:
+        count = 65536
+    alloc_str = 'guint8[{:d}]'.format(count)
+
+    buf_ptr = epan_ffi.new(alloc_str)
     # Copy from the data `pakcet_data` to us
-    buf_ptr = epan_ffi.new('guint8[1514]')
     epan_ffi.memmove(buf_ptr, packet_data, packet_capture_len)
 
     # Initialize Frame Data now
@@ -233,10 +243,19 @@ def _epan_perform_one_packet_dissection_v3(hdr, packet_data, cb_func):
     packet_len = hdr[0].len
     packet_capture_len = hdr[0].caplen
 
+    # Allocate enough space to 'copy'
+    count = packet_capture_len
+    if packet_capture_len > 1024:
+        count = 4096
+    if packet_capture_len > 4096:
+        count = 16384
+    if packet_capture_len > 16384:
+        count = 65536
+
     # Copy from the data `packet_data` to us
     # We've to oblige to `wireshark` way of doing it hence the heavy lifting
     buf = epan_ffi.new('Buffer *')
-    epan_lib.ws_buffer_init(buf, 1514) # FIXME : Should do with proper length
+    epan_lib.ws_buffer_init(buf, count) # FIXME : Should do with proper length
     start_ptr = buf[0].data + buf[0].start
     epan_ffi.memmove(start_ptr, packet_data, packet_capture_len)
 
