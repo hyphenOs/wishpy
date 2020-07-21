@@ -4,6 +4,8 @@ Our Dissector API.
 import socket
 import struct
 import json
+import time
+from datetime import datetime as dt
 
 from ._wrapper import *
 
@@ -125,6 +127,14 @@ class WishpyDissectorBase:
                 fvalue.value.uinteger), quote
 
     @classmethod
+    def epan_abstime_to_str(cls, fvalue, ftype, display):
+        timeval = fvalue.value.time
+        timeval = timeval.secs + timeval.nsecs / 1000000000
+        value = dt.strftime(dt.fromtimestamp(timeval), '%d-%b-%Y %H:%M:%S.%f %Z')
+        return value, False
+
+
+    @classmethod
     def epan_reltime_to_str(cls, fvalue, ftype, display):
         value = fvalue.value.time
         return "{:.9f}".format(value.secs + value.nsecs / 1000000000), False
@@ -182,6 +192,9 @@ class WishpyDissectorBase:
 
         if ftype == epan_lib.FT_RELATIVE_TIME:
             return cls.epan_reltime_to_str(fvalue, ftype, display)
+
+        if ftype == epan_lib.FT_ABSOLUTE_TIME:
+            return cls.epan_abstime_to_str(fvalue, ftype, display)
 
         if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
             return None, False
@@ -332,8 +345,8 @@ class WishpyDissectorQueue(WishpyDissectorBase):
         it's better that this function is in the base class.
         """
         hdr, data = self.fetch()
-        d = epan_perform_one_packet_dissection(hdr, data,
-                self.packet_to_json)
+        d = epan_perform_one_packet_dissection(self._packets_fetched,
+                hdr, data, self.packet_to_json)
 
         return hdr, data, d
 
@@ -352,11 +365,13 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
         self.__queue = queue
         self.__running = False
         self.__stop_requested = False
+        self._packets_fetched = 0
 
     def fetch(self):
         """Blocking Fetch from a Python Queue.
         """
         hdr, data = self.__queue.get()
+        self._packets_fetched += 1
         return hdr, data
 
     def __iter__(self):
@@ -377,20 +392,19 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
         fetched = 0
         while True:
-            hdr, data, d = self.dissect_one_packet()
-
             fetched += 1
+            hdr, data, d = self.dissect_one_packet()
 
             x = yield (hdr, data, d)
 
             if self.__stop_requested == True:
-                return
+                break
 
             if x and x.lower() == 'stop':
-                return
+                break
 
             if fetched == count:
-                return
+                break
 
         self.__running = False
 
