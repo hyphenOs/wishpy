@@ -4,6 +4,8 @@ Our Dissector API.
 import socket
 import struct
 import json
+import time
+from datetime import datetime as dt
 
 from ._wrapper import *
 
@@ -125,6 +127,14 @@ class WishpyDissectorBase:
                 fvalue.value.uinteger), quote
 
     @classmethod
+    def epan_abstime_to_str(cls, fvalue, ftype, display):
+        timeval = fvalue.value.time
+        timeval = timeval.secs + timeval.nsecs / 1000000000
+        value = dt.strftime(dt.fromtimestamp(timeval), '%d-%b-%Y %H:%M:%S.%f %Z')
+        return value, False
+
+
+    @classmethod
     def epan_reltime_to_str(cls, fvalue, ftype, display):
         value = fvalue.value.time
         return "{:.9f}".format(value.secs + value.nsecs / 1000000000), False
@@ -182,6 +192,9 @@ class WishpyDissectorBase:
 
         if ftype == epan_lib.FT_RELATIVE_TIME:
             return cls.epan_reltime_to_str(fvalue, ftype, display)
+
+        if ftype == epan_lib.FT_ABSOLUTE_TIME:
+            return cls.epan_abstime_to_str(fvalue, ftype, display)
 
         if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
             return None, False

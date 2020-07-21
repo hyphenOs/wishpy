@@ -122,6 +122,9 @@ def _epan_perform_one_packet_dissection_v2(hdr, packet_data, cb_func):
     rec[0].rec_header.packet_header.len = packet_len
     rec[0].rec_header.packet_header.caplen = packet_capture_len
     rec[0].rec_header.packet_header.pkt_encap = 1 # FIXME: Hard coded
+    rec[0].ts.secs = hdr[0].ts.tv_sec
+    rec[0].ts.nsecs = hdr[0].ts.tv_usec * 1000 # Asumes usec precision FIXME
+    rec[0].presence_flags = epan_lib.WTAP_HAS_TS | epan_lib.WTAP_HAS_CAP_LEN
 
     epan_lib.frame_data_init(frame_data_ptr, processed, rec,
             offset[0], cum_bytes[0])
@@ -267,6 +270,9 @@ def _epan_perform_one_packet_dissection_v3(hdr, packet_data, cb_func):
     rec[0].rec_header.packet_header.len = packet_len
     rec[0].rec_header.packet_header.caplen = packet_capture_len
     rec[0].rec_header.packet_header.pkt_encap = 1 # FIXME: Hard coded
+    rec[0].ts.secs = hdr[0].ts.tv_sec
+    rec[0].ts.nsecs = hdr[0].ts.tv_usec * 1000 # Asumes usec precision FIXME
+    rec[0].presence_flags = epan_lib.WTAP_HAS_TS | epan_lib.WTAP_HAS_CAP_LEN
 
     offset = epan_ffi.new('gint64 *')
     cum_bytes = epan_ffi.new('guint32 *')

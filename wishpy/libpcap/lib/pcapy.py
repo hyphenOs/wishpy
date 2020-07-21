@@ -411,6 +411,7 @@ class Reader:
 
         return result
 
+    #FIXME: Add set_ts_precision and get_ts_precision and list_ts_precisions funcs.
     def stats(self):
         """Get's the PCAP Stats.
         """
