@@ -131,7 +131,7 @@ class WishpyDissectorBase:
         timeval = fvalue.value.time
         timeval = timeval.secs + timeval.nsecs / 1000000000
         value = dt.strftime(dt.fromtimestamp(timeval), '%d-%b-%Y %H:%M:%S.%f %Z')
-        return value, False
+        return value, True
 
 
     @classmethod
@@ -276,7 +276,7 @@ class WishpyDissectorBase:
             x = json.loads(s, strict=False)
         except Exception as e:
             print(s)
-            return ""
+            raise
 
         return s
 
