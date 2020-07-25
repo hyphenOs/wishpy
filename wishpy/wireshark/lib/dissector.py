@@ -6,6 +6,7 @@ import struct
 import json
 import time
 from datetime import datetime as dt
+import unicodedata
 
 from ._wrapper import *
 
@@ -41,6 +42,13 @@ class WishpyDissectorBase:
             }
 
     @classmethod
+    def remove_ctrl_chars(cls, s):
+        """Removes the Ctrl Characters from the string.
+        """
+        # FIXME: May be we should replace them with their unicode code points
+        return "".join(ch for ch in s if unicodedata.category(ch)[0]!="C")
+
+    @classmethod
     def func_not_supported(cls, *args):
         return "Not Supported"
 
@@ -70,13 +78,13 @@ class WishpyDissectorBase:
             x = epan_ffi.string(value).decode("utf-8").\
                     replace('\\', '\\\\').\
                     replace('"', '\\"')
-            return repr(x), True
+            return cls.remove_ctrl_chars(x), True
         else:
             try:
                 x = epan_ffi.string(value).decode("utf-8").\
                         replace('\\', '\\\\').\
                         replace('"', '\\"')
-                return repr(x), True
+                return cls.remove_ctrl_chars(x), True
             except:
                 return "Cannot Decode"
 
@@ -276,7 +284,8 @@ class WishpyDissectorBase:
             x = json.loads(s, strict=False)
         except Exception as e:
             print(s)
-            raise
+            # FIXME: May be we should raise, let caller take care.
+            return {}
 
         return s
 
