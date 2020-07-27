@@ -41,6 +41,10 @@ If you have both the versions installed, it's a little bit tricky. If building
 `wireshark` from source, If you perform a `make install` (or `sudo make install`),
 the right `wireshark.pc` file is created and will be used during build.
 
+# PCAP support
+
+PCAP library > 1.7 is supported. The code is tested with version 1.9.1 of the library (tag from the git). Support for BPF filters in `libpcap` is not yet present. Also, there is a `pcapy` module, that can be used as a drop in replacement for [pcapy](https://github.com/helpsystems/pcapy). We support similar APIs as `pcapy` except `bpf` support.
+
 # Directory structure
 
 The directory structure of the code is as follows -
@@ -75,6 +79,3 @@ We have started with some very 'basic' Dissector API. See `examples/tshark.py` t
 This API is very early (in fact this is not really an API, but just a hint about what API might look like.)
 and definitely is going to change.
 
-# PCAP support
-
-PCAP library > 1.7 is supported. The code is tested with version 1.9 of the library. Support for BPF filters in `libpcap` is not yet present. Also, there is a `pcapy` module, that can be used as a drop in replacement for [pcapy](https://github.com/helpsystems/pcapy). We support similar APIs as `pcapy` except `bpf` support.

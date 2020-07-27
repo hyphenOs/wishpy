@@ -108,10 +108,6 @@ _extra_compile_args = ['-I/usr/include/wireshark',
             '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include',
             ]
 
-epan_lib = epan_ffi.verify(_sources,
-        libraries=_libraries,
-        extra_compile_args=_extra_compile_args)
-
 try:
     epan_ffi.set_source_pkgconfig(_pkg_name, _pkgconfig_libs, _sources)
 except PkgConfigError:
