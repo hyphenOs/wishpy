@@ -115,6 +115,6 @@ epan_lib = epan_ffi.verify(_sources,
 try:
     epan_ffi.set_source_pkgconfig(_pkg_name, _pkgconfig_libs, _sources)
 except PkgConfigError:
-    epan_ffi._set_source(_pkg_name, _sources,
+    epan_ffi.set_source(_pkg_name, _sources,
             libraries=_libraries,
             extra_compile_args=_extra_compile_args)
