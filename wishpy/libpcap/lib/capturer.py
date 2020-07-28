@@ -8,7 +8,7 @@ import logging
 from .libpcap_ext import lib as pcap_lib
 from .libpcap_ext import ffi as pcap_ffi
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 class WishpyCapturerOpenError(Exception):
     pass
@@ -134,6 +134,8 @@ class LibpcapCapturer(WishpyCapturer):
                 On Error Condition, `WishpyCapturerCaptureError`.
         """
 
+        _logger.debug("LibpcapCapturer.start")
+
         def capture_callback(user, hdr, data):
             self.__queue.put((hdr, data,))
 
@@ -150,6 +152,7 @@ class LibpcapCapturer(WishpyCapturer):
         Simply calls internal libpcap's `pcap_breakloop`
         """
 
+        _logger.debug("LibpcapCapturer.stop")
         pcap_lib.pcap_breakloop(self.__pcap_handle)
 
     def open(self):
@@ -159,6 +162,8 @@ class LibpcapCapturer(WishpyCapturer):
             parameters during the Constructor, those values are set and
             finally activates the handle.
         """
+
+        _logger.debug("LibpcapCapturer.open")
 
         err_buff = pcap_ffi.new('char [256]')
         handle = pcap_lib.pcap_create(self.__iface.encode(), err_buff)
@@ -204,6 +209,8 @@ class LibpcapCapturer(WishpyCapturer):
             pcap_lib.pcap_close(self.__pcap_handle)
         self.__pcap_activated = False
         self.__pcap_handle = None
+
+        _logger.debug("LibpcapCapturer.close")
 
     def __repr__(self):
         return "LibpcapCapturer iface:{}, snaplen:{}, promisc:{}, timeout:{}".\

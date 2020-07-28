@@ -6,10 +6,12 @@ This module provides `pcapy` (https://github.com/helpsystems/pcapy)
 import warnings
 import sys
 import ipaddress
+import logging
 
 from .libpcap_ext import lib as _pcap_lib
 from .libpcap_ext import ffi as _pcap_ffi
 
+_logger = logging.getLogger(__name__)
 
 class PcapError(Exception):
     pass
@@ -148,7 +150,7 @@ class Reader:
         try:
             pcap_close(self.__pcap_handle)
         except:
-            pass
+            _logger.warning("Reader.close")
         finally:
             self.__pcap_handle = None
 
@@ -499,8 +501,7 @@ class _Dumper:
             try:
                 _pcap_lib.pcap_dump_close(self.__dumper)
             except:
-                ## Log warning
-                pass
+                _logger.warning("Reader.close")
             finally:
                 self.__dumper = None
 

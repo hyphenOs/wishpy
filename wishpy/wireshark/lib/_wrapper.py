@@ -10,6 +10,7 @@ API calls.
 import os
 import binascii
 import warnings
+import logging
 
 try:
     from .epan2_ext import lib as epan_lib
@@ -23,6 +24,8 @@ except ImportError:
     except ImportError:
         warnings.warn("Epan Library Extensions Not Found.")
         raise EpanLoadError
+
+_logger = logging.getLogger(__name__)
 
 class EpanLoadError(Exception):
     pass
@@ -96,8 +99,10 @@ def _epan_perform_one_packet_dissection_v2(frames, hdr, packet_data, cb_func):
     if packet_capture_len > 1024:
         count = 4096
     if packet_capture_len > 4096:
+        _logger.debug("Big Packet: Length: %d", packet_capture_len)
         count = 16384
     if packet_capture_len > 16384:
+        _logger.debug("Huge Packet: Length: %d", packet_capture_len)
         count = 65536
     alloc_str = 'guint8[{:d}]'.format(count)
 
@@ -250,14 +255,17 @@ def _epan_perform_one_packet_dissection_v3(frames, hdr, packet_data, cb_func):
     if packet_capture_len > 1024:
         count = 4096
     if packet_capture_len > 4096:
+        _logger.debug("Big Packet: Length: %d", packet_capture_len)
         count = 16384
     if packet_capture_len > 16384:
+        _logger.debug("Huge Packet: Length: %d", packet_capture_len)
         count = 65536
+    count = packet_capture_len
 
     # Copy from the data `packet_data` to us
     # We've to oblige to `wireshark` way of doing it hence the heavy lifting
     buf = epan_ffi.new('Buffer *')
-    epan_lib.ws_buffer_init(buf, count) # FIXME : Should do with proper length
+    epan_lib.ws_buffer_init(buf, count)
     start_ptr = buf[0].data + buf[0].start
     epan_ffi.memmove(start_ptr, packet_data, packet_capture_len)
 
@@ -401,6 +409,7 @@ def wtap_open_file_offline(filepath):
     """
 
     if not os.path.exists(filepath):
+        _logger.error("File not found: %s", filepath)
         return None, None
 
     # Open a wtap file
@@ -410,6 +419,8 @@ def wtap_open_file_offline(filepath):
     open_type = epan_lib.WTAP_TYPE_AUTO
     wth = epan_lib.wtap_open_offline(filename.encode(), open_type, err, err_str, False)
     if wth is epan_ffi.NULL:
+        err_display_str = epan_ffi.string(err_str)
+        _logger.error("Error creating wiretap handle: %s", err_display_str)
         return None, None
 
     wtap_file_type = epan_lib.wtap_file_type_subtype(wth)
@@ -429,6 +440,8 @@ else:
     epan_perform_one_packet_dissection = _epan_perform_one_packet_dissection_v3
 
 def perform_epan_wtap_init():
+
+    _logger.info("Found Wireshark Epan Version %d.%d", _epan_version[0], _epan_version[1])
 
     # FIXME: True / False to be decided
     epan_lib.wtap_init(False)

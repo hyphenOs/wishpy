@@ -7,6 +7,7 @@ import json
 import time
 from datetime import datetime as dt
 import unicodedata
+import logging
 
 from ._wrapper import *
 
@@ -19,6 +20,8 @@ class WishpyEpanLibAlreadyInitialized(Exception):
 
 class WishpyErrorWthOpen(Exception):
     pass
+
+_logger = logging.getLogger(__name__)
 
 _EPAN_LIB_INITIALIZED = False
 
@@ -85,7 +88,8 @@ class WishpyDissectorBase:
                         replace('\\', '\\\\').\
                         replace('"', '\\"')
                 return cls.remove_ctrl_chars(x), True
-            except:
+            except Exception as e:
+                _logger.exception("epan_str_to_str: %s", x)
                 return "Cannot Decode"
 
     @classmethod
@@ -129,6 +133,7 @@ class WishpyDissectorBase:
 
             base_format, quote = cls.hfbases[display]
         except:
+            _logger.exception("epan_init_to_str: %d %d", ftype, display)
             return "type: {} display: {} Not Supported".format(ftype, display), True
 
         return base_format.format(fvalue.value.uinteger,
@@ -211,8 +216,8 @@ class WishpyDissectorBase:
 
     @classmethod
     def print_dissected_tree(cls, node_ptr, data_ptr):
+        """Returns a string that represents a dissected tree.
         """
-        Returns a string that represents a dissected tree."""
 
         return_str = ""
 
@@ -283,7 +288,7 @@ class WishpyDissectorBase:
         try:
             x = json.loads(s, strict=False)
         except Exception as e:
-            print(s)
+            _logger.exception("packet_to_json")
             # FIXME: May be we should raise, let caller take care.
             return {}
 
@@ -334,7 +339,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
             yield from epan_perform_dissection(wth, wth_filetype,
                     self.packet_to_json, count, skip)
         except Exception as e:
-            print(e)
+            _logger.exception("WishpyDissectorFile.run")
             pass
         finally:
             # If we don't close `wtap` here, outer `cleanup_process` croaks
