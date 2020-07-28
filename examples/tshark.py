@@ -5,6 +5,7 @@ import struct
 import socket
 from datetime import datetime as dt
 import warnings
+import logging
 
 _MAX_TO_PROCESS = 10000000
 
@@ -12,6 +13,9 @@ from wishpy.wireshark.lib.dissector import WishpyDissectorFile
 from wishpy.wireshark.lib.dissector import setup_process, cleanup_process
 
 if __name__ == '__main__':
+
+    logger = logging.getLogger()
+    logging.basicConfig()
 
     if not len(sys.argv) >= 2:
         print("Usage: tshark.py <filepath>")
