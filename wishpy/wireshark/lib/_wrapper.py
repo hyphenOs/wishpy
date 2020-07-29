@@ -36,9 +36,6 @@ def _wishpy_get_ts(prov, frame_num):
     return _nstime_empty
 
 
-_wishpy_provider_funcs = epan_ffi.new('struct packet_provider_funcs *',
-        [_wishpy_get_ts, epan_ffi.NULL, epan_ffi.NULL, epan_ffi.NULL])
-
 def _epan_init_v2():
 
     epan_lib.init_process_policies()
@@ -75,7 +72,7 @@ def _epan_init_v3():
 
     return result
 
-def _epan_perform_one_packet_dissection_v2(frames, hdr, packet_data, cb_func):
+def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet_data, cb_func):
     """Performs dissection of a single packet using v2.6
     """
 
@@ -83,9 +80,9 @@ def _epan_perform_one_packet_dissection_v2(frames, hdr, packet_data, cb_func):
     wth_file_type = 1
     total_bytes = 0
 
-    # FIXME: epan_session and epan_dissect_obj to be set by caller? So that
-    # We don't free on every data.
-    epan_session = epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
+    epan_session = wishpy_dissector.epan_session
+    epan_dissect_obj = wishpy_dissector.epan_dissector
+    elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
 
     epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
 
@@ -111,7 +108,6 @@ def _epan_perform_one_packet_dissection_v2(frames, hdr, packet_data, cb_func):
     epan_ffi.memmove(buf_ptr, packet_data, packet_capture_len)
 
     # Initialize Frame Data now
-    elapsed_time_ptr = epan_ffi.new('nstime_t *')
     frame_data_ptr = epan_ffi.new('frame_data *')
 
     frame_data_ref = epan_ffi.new('frame_data **')
@@ -152,24 +148,19 @@ def _epan_perform_one_packet_dissection_v2(frames, hdr, packet_data, cb_func):
     epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
     epan_lib.epan_dissect_reset(epan_dissect_obj)
 
-    epan_lib.epan_dissect_free(epan_dissect_obj)
-    epan_lib.epan_free(epan_session)
-
     return dissected
 
-def _epan_perform_dissection_v2(wth, wth_file_type, cb_func, count=0, skip=-1):
+def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, count=0, skip=-1):
     """
     Performs dissection of the file bound to `wth`
     """
 
-    epan_session = epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
-
-    # TODO: make proper `epan_session` for us
-    epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
+    epan_session = wishpy_dissector.epan_session
+    epan_dissect_obj = wishpy_dissector.epan_dissector
+    elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
 
     offset = epan_ffi.new('gint64 *')
     frame_data_ref = epan_ffi.new('frame_data **')
-    elapsed_time_ptr = epan_ffi.new('nstime_t *')
 
     err = epan_ffi.new('int *')
     err_str = epan_ffi.new("gchar **")
@@ -228,9 +219,6 @@ def _epan_perform_dissection_v2(wth, wth_file_type, cb_func, count=0, skip=-1):
         else:
             break
 
-    epan_lib.epan_dissect_free(epan_dissect_obj)
-    epan_lib.epan_free(epan_session)
-
 def _epan_perform_one_packet_dissection_v3(frames, hdr, packet_data, cb_func):
     """Performs a single packet dissection.
     """
@@ -239,14 +227,11 @@ def _epan_perform_one_packet_dissection_v3(frames, hdr, packet_data, cb_func):
     wth_file_type = 1
     total_bytes = 0
 
-    # FIXME: epan_session and epan_dissect_obj to be set by caller? So that
-    # We don't free on every data.
-    epan_session = epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
-
-    epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
+    epan_session = wishpy_dissector.epan_session
+    epan_dissect_obj = wishpy_dissector.epan_dissector
+    elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
 
     # Read stuff from `hdr` for us
-    # TODO: Timestamps
     packet_len = hdr[0].len
     packet_capture_len = hdr[0].caplen
 
@@ -289,7 +274,6 @@ def _epan_perform_one_packet_dissection_v3(frames, hdr, packet_data, cb_func):
     cum_bytes[0] = total_bytes
 
     # FIXME: Look at properly using `frame_data_ref`
-    elapsed_time_ptr = epan_ffi.new('nstime_t *')
     frame_data_ref = epan_ffi.new('frame_data **')
     frame_data_ref[0] = epan_ffi.NULL
     epan_lib.frame_data_set_before_dissect(frame_data_ptr,
@@ -313,9 +297,6 @@ def _epan_perform_one_packet_dissection_v3(frames, hdr, packet_data, cb_func):
     epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
     epan_lib.epan_dissect_reset(epan_dissect_obj)
 
-    epan_lib.epan_dissect_free(epan_dissect_obj)
-    epan_lib.epan_free(epan_session)
-
     return dissected
 
 
@@ -325,14 +306,12 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0, skip=-1):
     is specified, performs dissection of up to `count` packets
     """
 
-    epan_session = epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
-
-    # TODO: make proper `epan_session` for us
-    epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
+    epan_session = wishpy_dissector.epan_session
+    epan_dissect_obj = wishpy_dissector.epan_dissector
+    elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
 
     offset = epan_ffi.new('gint64 *')
     frame_data_ref = epan_ffi.new('frame_data **')
-    elapsed_time_ptr = epan_ffi.new('nstime_t *')
 
     buf = epan_ffi.new('Buffer *')
     epan_lib.ws_buffer_init(buf, 1514) # FIXME : Should do with proper length
@@ -397,9 +376,6 @@ def _epan_perform_dissection_v3(wth, wth_file_type, cb_func, count=0, skip=-1):
         else:
             break
 
-    epan_lib.epan_dissect_free(epan_dissect_obj)
-    epan_lib.epan_free(epan_session)
-
     return processed
 
 def wtap_open_file_offline(filepath):
@@ -429,6 +405,35 @@ def wtap_open_file_offline(filepath):
 wtap_close = epan_lib.wtap_close
 epan_cleanup = epan_lib.epan_cleanup
 
+_wishpy_provider_funcs = epan_ffi.new('struct packet_provider_funcs *',
+        [_wishpy_get_ts, epan_ffi.NULL, epan_ffi.NULL, epan_ffi.NULL])
+
+
+def epan_new_session():
+    """Get new `epan_session`
+
+    Calls the wrapped `epan_new` and returns the handler.
+    """
+    return epan_lib.epan_new(epan_ffi.NULL, _wishpy_provider_funcs)
+
+def epan_free_session(session):
+    """Calls `epan_free` on the given `session` object.
+    """
+    epan_lib.epan_free(session)
+
+def epan_new_dissector(session):
+    """Get new `epan_dissect_t`
+
+    Calls the wrapped `epan_dissect_new` and returns the handler.
+    Params:
+        session: `epan_session` object returned by `epan_new_session`(ish).
+    """
+    return epan_lib.epan_dissect_new(session, True, True)
+
+def epan_free_dissector(epan_dissector_obj):
+    """Calls internal `epan_dissect_free` on the `epan_dissector_obj`
+    """
+    epan_lib.epan_dissect_free(epan_dissector_obj)
 
 if _epan_version == (2,6):
     epan_lib_init = _epan_init_v2
