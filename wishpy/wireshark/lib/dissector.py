@@ -12,6 +12,9 @@ import logging
 from ._wrapper import *
 
 
+class WishpyErrorInitDissector(Exception):
+    pass
+
 class WishpyEpanLibUninitializedError(Exception):
     pass
 
@@ -294,6 +297,54 @@ class WishpyDissectorBase:
 
         return s
 
+    def __init__(self, *args, **kw):
+        self._epan_dissector = None
+        self._elapsed_time_ptr = None
+
+    @property
+    def elapsed_time_ptr(self):
+        return self._elapsed_time_ptr
+
+    @property
+    def epan_dissector(self):
+
+        return self._epan_dissector
+
+    @property
+    def epan_session(self):
+        if self._epan_dissector is None:
+            return None
+
+        return self._epan_dissector[0].session
+
+    def init_epan_dissector(self):
+        """Initializes `epan_dissect_t` and `epan_session` objects. These
+        objects are passed to the `run` method.
+        """
+        if self._epan_dissector is not None:
+            raise WishpyErrorInitDissector("Dissector already initialized?")
+
+        self._elapsed_time_ptr = epan_ffi.new('nstime_t *')
+
+        session = epan_new_session()
+        self._epan_dissector = epan_new_dissector(session)
+
+
+    def cleanup_epan_dissector(self):
+        """Cleans up internal dissector object.
+        """
+        session = self.epan_session
+
+        epan_free_dissector(self._epan_dissector)
+        self._epan_dissector = None
+
+        epan_free_session(session)
+
+        del self._elapsed_time_ptr
+
+        self._elapsed_time_ptr = None
+
+
     def run(self, *args, **kw):
         """A generator function `yield`ing at-least the dissected packets.
 
@@ -313,6 +364,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
     """
 
     def __init__(self, filename):
+        super().__init__()
         self.__filename = filename
 
     def run(self, count=0, skip=-1):
@@ -326,6 +378,8 @@ class WishpyDissectorFile(WishpyDissectorBase):
             raise WishpyEpanLibUninitializedError(
                     "Epan Library Not initialized. Did you call setup_process()"
                     )
+
+        self.init_epan_dissector()
         # FIXME: dissector.run can be run only once right now
         # FIXME: Pass errno / errstr ourselves to get the error to be passed
         # to the Exception handler
@@ -336,7 +390,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
             raise WishpyErrorWthOpen()
 
         try:
-            yield from epan_perform_dissection(wth, wth_filetype,
+            yield from epan_perform_dissection(self, wth, wth_filetype,
                     self.packet_to_json, count, skip)
         except Exception as e:
             _logger.exception("WishpyDissectorFile.run")
@@ -344,6 +398,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
         finally:
             # If we don't close `wtap` here, outer `cleanup_process` croaks
             wtap_close(wth)
+            self.cleanup_epan_dissector()
 
         return
 
@@ -359,7 +414,7 @@ class WishpyDissectorQueue(WishpyDissectorBase):
         it's better that this function is in the base class.
         """
         hdr, data = self.fetch()
-        d = epan_perform_one_packet_dissection(self._packets_fetched,
+        d = epan_perform_one_packet_dissection(self, self._packets_fetched,
                 hdr, data, self.packet_to_json)
 
         return hdr, data, d
@@ -376,6 +431,9 @@ class WishpyDissectorQueue(WishpyDissectorBase):
 class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
     def __init__(self, queue):
+
+        super().__init__()
+
         self.__queue = queue
         self.__running = False
         self.__stop_requested = False
@@ -404,10 +462,16 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
         self.__running = True
 
+        self.init_epan_dissector()
+
         fetched = 0
         while True:
             fetched += 1
-            hdr, data, d = self.dissect_one_packet()
+            try:
+                hdr, data, d = self.dissect_one_packet()
+            except:
+                _logger.exception("dissect_one_packet")
+                break
 
             x = yield (hdr, data, d)
 
@@ -419,6 +483,8 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
             if fetched == count:
                 break
+
+        self.cleanup_epan_dissector()
 
         self.__running = False
 
