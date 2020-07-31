@@ -90,9 +90,13 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
     epan_session = wishpy_dissector.epan_session
     epan_dissect_obj = wishpy_dissector.epan_dissector
     elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
-    frame_data_ref = wishpy_dissector.ref_frame_data
+    ref_frame_data_ptr = wishpy_dissector.ref_frame_data_ptr
+    last_frame_data = wishpy_dissector.last_frame_data
 
-    epan_dissect_obj = epan_lib.epan_dissect_new(epan_session, True, True)
+    if ref_frame_data_ptr[0] == epan_ffi.NULL:
+        curr_frame_data = wishpy_dissector.first_frame_data
+    else:
+        curr_frame_data = epan_ffi.new('frame_data *')
 
     # Read stuff from `hdr` for us
     # TODO: Timestamps
@@ -115,9 +119,6 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
     # Copy from the data `pakcet_data` to us
     epan_ffi.memmove(buf_ptr, packet_data, packet_capture_len)
 
-    # Initialize Frame Data now
-    frame_data_ptr = epan_ffi.new('frame_data *')
-
     offset = epan_ffi.new('gint64 *')
     cum_bytes = epan_ffi.new('guint32 *')
 
@@ -131,12 +132,11 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
     rec[0].ts.nsecs = hdr[0].ts.tv_usec * 1000 # Asumes usec precision FIXME
     rec[0].presence_flags = epan_lib.WTAP_HAS_TS | epan_lib.WTAP_HAS_CAP_LEN
 
-    epan_lib.frame_data_init(frame_data_ptr, frames, rec,
+    epan_lib.frame_data_init(curr_frame_data, frames, rec,
             offset[0], cum_bytes[0])
 
-    # FIXME: Look at properly using `frame_data_ref`
-    epan_lib.frame_data_set_before_dissect(frame_data_ptr,
-            elapsed_time_ptr, frame_data_ref, epan_ffi.NULL)
+    epan_lib.frame_data_set_before_dissect(curr_frame_data,
+            elapsed_time_ptr, ref_frame_data_ptr, last_frame_data)
 
     # Not sure what this is - Just copied from `tshark` sources
     epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(epan_dissect_obj)
@@ -145,12 +145,16 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
     # Get buffer and tvbuff first and then run dissector
     tvb_ptr = epan_lib.tvb_new_real_data(buf_ptr, packet_len, packet_capture_len)
     epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type, rec,
-            tvb_ptr, frame_data_ptr, epan_ffi.NULL)
+            tvb_ptr, curr_frame_data, epan_ffi.NULL)
 
     dissected = cb_func(epan_dissect_obj)
 
+    # Get into last data - useful for relative analysis
+    epan_ffi.memmove(last_frame_data,
+            curr_frame_data, epan_ffi.sizeof('frame_data'))
+
     # Reset the frame data and dissector object
-    epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
+    epan_lib.frame_data_set_after_dissect(curr_frame_data, cum_bytes)
     epan_lib.epan_dissect_reset(epan_dissect_obj)
 
     return dissected
@@ -164,8 +168,7 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
     epan_dissect_obj = wishpy_dissector.epan_dissector
     elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
     ref_frame_data_ptr = wishpy_dissector.ref_frame_data_ptr
-
-    curr_frame_data = wishpy_dissector.curr_frame_data
+    last_frame_data = wishpy_dissector.last_frame_data
 
     offset = epan_ffi.new('gint64 *')
 
@@ -173,13 +176,19 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
     err_str = epan_ffi.new("gchar **")
 
     cum_bytes = epan_ffi.new('guint32 *')
-    processed = 0
+    processed = 1
     total_bytes = 0
     while True:
+
+        if ref_frame_data_ptr[0] == epan_ffi.NULL:
+            curr_frame_data = wishpy_dissector.first_frame_data
+        else:
+            curr_frame_data = epan_ffi.new('frame_data *')
+
         result = epan_lib.wtap_read(wth, err, err_str, offset)
 
         if result == True:
-            processed += 1
+
             rec = epan_lib.wtap_get_rec(wth)
             buf_ptr = epan_lib.wtap_get_buf_ptr(wth)
 
@@ -194,7 +203,7 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
 
             # FIXME: Look at properly using `frame_data_ref`
             epan_lib.frame_data_set_before_dissect(curr_frame_data,
-                    elapsed_time_ptr, ref_frame_data_ptr, epan_ffi.NULL)
+                    elapsed_time_ptr, ref_frame_data_ptr, last_frame_data)
 
             # Not sure what this is - Just copied from `tshark` sources
             epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
@@ -210,8 +219,12 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
 
             dissected = cb_func(epan_dissect_obj)
 
+            # Get into last data - useful for relative analysis
+            epan_ffi.memmove(last_frame_data,
+                curr_frame_data, epan_ffi.sizeof('frame_data'))
+
             # Reset the frame data and dissector object
-            epan_lib.frame_data_set_after_dissect(frame_data_ptr, cum_bytes)
+            epan_lib.frame_data_set_after_dissect(curr_frame_data, cum_bytes)
             epan_lib.epan_dissect_reset(epan_dissect_obj)
 
             processed += 1
