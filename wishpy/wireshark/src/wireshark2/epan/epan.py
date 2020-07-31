@@ -19,6 +19,7 @@ from ...wsutil.plugins_h import wsutil_plugins_h_cdef
 from ...wsutil.colors_h import wsutil_colors_h_cdef
 #from ...wsutil.ws_mempbrh_h import wsutil_ws_mempbrk_h_types_cdef
 from ...wsutil.privileges_h import wsutil_privileges_h_funcs_cdef
+from ...wishpy_types_h import wishpy_types_h_cdef
 
 
 from ..wtap.wtap_h import (
@@ -88,6 +89,8 @@ epan_ffi.cdef(epan_epan_dissect_h_types_cdef)
 epan_ffi.cdef(epan_h_cdef)
 epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
+epan_ffi.cdef(wishpy_types_h_cdef)
+
 # Go ahead and get the Library handle
 
 _pkg_name = 'wishpy.wireshark.lib.epan2_ext'
@@ -101,6 +104,11 @@ _sources = '''
             #include <epan/epan.h>
             #include <epan/packet.h>
             #include <wsutil/privileges.h>
+
+            struct packet_provider_data {
+                const frame_data *ref;
+                const frame_data *prev;
+            };
 '''
 _libraries = ['glib-2.0', 'wireshark', 'wsutil']
 _extra_compile_args = ['-I/usr/include/wireshark',

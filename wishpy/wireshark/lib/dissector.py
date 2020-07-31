@@ -300,6 +300,22 @@ class WishpyDissectorBase:
     def __init__(self, *args, **kw):
         self._epan_dissector = None
         self._elapsed_time_ptr = None
+        self._ref_frame_data_ptr = None
+        self._first_frame_data = None
+        self._last_frame_data = None
+        self._provider = None
+
+    @property
+    def last_frame_data(self):
+        return self._last_frame_data
+
+    @property
+    def first_frame_data(self):
+        return self._first_frame_data
+
+    @property
+    def ref_frame_data_ptr(self):
+        return self._ref_frame_data_ptr
 
     @property
     def elapsed_time_ptr(self):
@@ -326,7 +342,17 @@ class WishpyDissectorBase:
 
         self._elapsed_time_ptr = epan_ffi.new('nstime_t *')
 
-        session = epan_new_session()
+        self._ref_frame_data_ptr = epan_ffi.new('frame_data **')
+        self._ref_frame_data_ptr[0] = epan_ffi.NULL
+
+        self._first_frame_data = epan_ffi.new('frame_data *')
+        self._last_frame_data = epan_ffi.new('frame_data *')
+
+        self._provider = epan_ffi.new('struct packet_provider_data *')
+        self._provider[0].ref = self._first_frame_data
+        self._provider[0].prev = self._last_frame_data
+
+        session = epan_new_session(self._provider)
         self._epan_dissector = epan_new_dissector(session)
 
 
@@ -341,6 +367,10 @@ class WishpyDissectorBase:
         epan_free_session(session)
 
         del self._elapsed_time_ptr
+        del self._first_frame_data
+        del self._last_frame_data
+        del self._provider
+        del self._ref_frame_data_ptr
 
         self._elapsed_time_ptr = None
 
