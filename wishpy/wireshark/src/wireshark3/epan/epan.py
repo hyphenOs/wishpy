@@ -19,6 +19,7 @@ from ...wsutil.plugins_h import wsutil_plugins_h_cdef
 from ...wsutil.colors_h import wsutil_colors_h_cdef
 #from ...wsutil.ws_mempbrk_h import wsutil_ws_mempbrk_h_types_cdef
 from ...wsutil.privileges_h import wsutil_privileges_h_funcs_cdef
+from ...wishpy_types_h import wishpy_types_h_cdef
 
 
 from ..wtap.wtap_h import (
@@ -93,6 +94,8 @@ epan_ffi.cdef(epan_h_cdef)
 epan_ffi.cdef(epan_packet_h_types_cdef)
 epan_ffi.cdef(epan_packet_h_funcs_cdef)
 
+# Add our own definitions
+epan_ffi.cdef(wishpy_types_h_cdef)
 # Go ahead and get the Library handle
 
 
@@ -105,6 +108,11 @@ _sources = '''
             #include <epan/packet.h>
             #include <epan/prefs.h>
             #include <wsutil/privileges.h>
+
+            struct packet_provider_data {
+                const frame_data *ref;
+                const frame_data *prev;
+            };
 '''
 
 _pkg_name = 'wishpy.wireshark.lib.epan3_ext'
