@@ -59,7 +59,7 @@ class WishpyDissectorBase:
         return "Not Supported"
 
     @classmethod
-    def epan_ether_to_str(cls, fvalue, ftype, display):
+    def epan_ether_to_str(cls, fvalue, ftype, display, abbrev):
         """ Converting Ethernet addresses to String"""
 
         eth_bytes = fvalue.value.bytes
@@ -74,7 +74,7 @@ class WishpyDissectorBase:
     epan_bytes_to_str = epan_ether_to_str
 
     @classmethod
-    def epan_str_to_str(cls, fvalue, ftype, display):
+    def epan_str_to_str(cls, fvalue, ftype, display, abbrev):
         """Converting epan 'char *' to Python String"""
 
         value = fvalue.value.string
@@ -92,11 +92,11 @@ class WishpyDissectorBase:
                         replace('"', '\\"')
                 return cls.remove_ctrl_chars(x), True
             except Exception as e:
-                _logger.exception("epan_str_to_str: %s", x)
+                _logger.exception("epan_str_to_str: (%s) %s", abbrev, x)
                 return "Cannot Decode"
 
     @classmethod
-    def epan_ipv4_to_str(cls, fvalue, ftype, display):
+    def epan_ipv4_to_str(cls, fvalue, ftype, display, abbrev):
         """Converting IP Address to Python String"""
 
         ipv4 = fvalue.value.ipv4
@@ -104,7 +104,8 @@ class WishpyDissectorBase:
         return socket.inet_ntoa(struct.pack('!I', ipv4.addr)), True
 
     @classmethod
-    def epan_bool_to_str(cls, fvalue, ftype, display, on_off=False, json_compat=True):
+    def epan_bool_to_str(cls, fvalue, ftype, display, abbrev,
+            on_off=False, json_compat=True):
         """ Converting `gboolean` to String"""
 
         if on_off and json_compat:
@@ -126,24 +127,50 @@ class WishpyDissectorBase:
         return "{}".format(value)
 
     @classmethod
-    def epan_int_to_str(cls, fvalue, ftype, display):
+    def epan_int_to_str(cls, fvalue, ftype, display, abbrev):
         """Converting Integer to String, using BASE_* property."""
 
         try:
-            # We are not displaying 'Extended string for the value
+            # We are ignoring all fancy display options for now
+            if display & epan_lib.BASE_RANGE_STRING:
+                display ^= epan_lib.BASE_RANGE_STRING
+
             if display & epan_lib.BASE_EXT_STRING:
                 display ^= epan_lib.BASE_EXT_STRING
 
+            if display & epan_lib.BASE_VAL64_STRING:
+                display ^= epan_lib.BASE_VAL64_STRING
+
+            if display & epan_lib.BASE_ALLOW_ZERO:
+                display ^= epan_lib.BASE_ALLOW_ZERO
+
+            if display & epan_lib.BASE_UNIT_STRING:
+                display ^= epan_lib.BASE_UNIT_STRING
+
+            if display & epan_lib.BASE_NO_DISPLAY_VALUE:
+                display ^= epan_lib.BASE_NO_DISPLAY_VALUE
+
+            if display & epan_lib.BASE_PROTOCOL_INFO:
+                display ^= epan_lib.BASE_PROTOCOL_INFO
+
+            if display & epan_lib.BASE_SPECIAL_VALS:
+                display ^= epan_lib.BASE_SPECIAL_VALS
+
+            # Change the custom display to `Decimal` for now
+            if display == epan_lib.BASE_CUSTOM:
+                display = epan_lib.BASE_DEC
+
             base_format, quote = cls.hfbases[display]
+
         except:
-            _logger.exception("epan_init_to_str: %d %d", ftype, display)
+            _logger.exception("epan_int_to_str: (%s) %d %d", abbrev, ftype, display)
             return "type: {} display: {} Not Supported".format(ftype, display), True
 
         return base_format.format(fvalue.value.uinteger,
                 fvalue.value.uinteger), quote
 
     @classmethod
-    def epan_abstime_to_str(cls, fvalue, ftype, display):
+    def epan_abstime_to_str(cls, fvalue, ftype, display, abbrev):
         timeval = fvalue.value.time
         timeval = timeval.secs + timeval.nsecs / 1000000000
         value = dt.strftime(dt.fromtimestamp(timeval), '%d-%b-%Y %H:%M:%S.%f %Z')
@@ -151,7 +178,7 @@ class WishpyDissectorBase:
 
 
     @classmethod
-    def epan_reltime_to_str(cls, fvalue, ftype, display):
+    def epan_reltime_to_str(cls, fvalue, ftype, display, abbrev):
         value = fvalue.value.time
         return "{:.9f}".format(value.secs + value.nsecs / 1000000000), False
 
@@ -189,28 +216,28 @@ class WishpyDissectorBase:
         epan_all_int_types = epan_int_types + epan_uint_types
 
         if ftype in epan_all_int_types:
-            return cls.epan_int_to_str(fvalue, ftype, display)
+            return cls.epan_int_to_str(fvalue, ftype, display, abbrev)
 
         if ftype == epan_lib.FT_ETHER:
-            return cls.epan_ether_to_str(fvalue, ftype, display)
+            return cls.epan_ether_to_str(fvalue, ftype, display, abbrev)
 
         if ftype == epan_lib.FT_IPv4:
-            return cls.epan_ipv4_to_str(fvalue, ftype, display)
+            return cls.epan_ipv4_to_str(fvalue, ftype, display, abbrev)
 
         if ftype == epan_lib.FT_BOOLEAN:
-            return cls.epan_bool_to_str(fvalue, ftype, display)
+            return cls.epan_bool_to_str(fvalue, ftype, display, abbrev)
 
         if ftype == epan_lib.FT_STRING:
-            return cls.epan_str_to_str(fvalue, ftype, display)
+            return cls.epan_str_to_str(fvalue, ftype, display, abbrev)
 
         if ftype == epan_lib.FT_BYTES:
-            return cls.epan_bytes_to_str(fvalue, ftype, display)
+            return cls.epan_bytes_to_str(fvalue, ftype, display, abbrev)
 
         if ftype == epan_lib.FT_RELATIVE_TIME:
-            return cls.epan_reltime_to_str(fvalue, ftype, display)
+            return cls.epan_reltime_to_str(fvalue, ftype, display, abbrev)
 
         if ftype == epan_lib.FT_ABSOLUTE_TIME:
-            return cls.epan_abstime_to_str(fvalue, ftype, display)
+            return cls.epan_abstime_to_str(fvalue, ftype, display, abbrev)
 
         if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
             return None, False
