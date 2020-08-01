@@ -33,6 +33,28 @@ class WishpyDissectorBase:
     `libwireshark`. Right now this simply prints the dissector tree.
     """
 
+    epan_int_types = [
+                epan_lib.FT_INT8,
+                epan_lib.FT_INT16,
+                epan_lib.FT_INT32,
+                epan_lib.FT_INT40,
+                epan_lib.FT_INT48,
+                epan_lib.FT_INT56,
+                epan_lib.FT_INT64]
+
+    epan_uint32_types = [
+                epan_lib.FT_CHAR,
+                epan_lib.FT_UINT8,
+                epan_lib.FT_UINT16,
+                epan_lib.FT_UINT32,
+                epan_lib.FT_FRAMENUM]
+
+    epan_uint_types = epan_uint32_types + \
+                [ epan_lib.FT_UINT40, epan_lib.FT_UINT48,
+                epan_lib.FT_UINT56, epan_lib.FT_UINT64]
+
+    epan_all_int_types = epan_int_types + epan_uint_types
+
     # Below are some dict's required for printing few packet types
     hfbases = {
             epan_lib.BASE_NONE : ('{:d}', False), # Not sure how this is to be treated
@@ -45,14 +67,14 @@ class WishpyDissectorBase:
             epan_lib.BASE_PT_UDP: ('{:d}', False),
             epan_lib.BASE_PT_SCTP: ('{:d}', False)
 
-            }
+     }
 
     @classmethod
     def remove_ctrl_chars(cls, s):
         """Removes the Ctrl Characters from the string.
         """
         # FIXME: May be we should replace them with their unicode code points
-        return "".join(ch for ch in s if unicodedata.category(ch)[0]!="C")
+        return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C")
 
     @classmethod
     def func_not_supported(cls, *args):
@@ -131,6 +153,7 @@ class WishpyDissectorBase:
         """Converting Integer to String, using BASE_* property."""
 
         try:
+            # FIXME: We can definitely do better than these `if`s.
             # We are ignoring all fancy display options for now
             if display & epan_lib.BASE_RANGE_STRING:
                 display ^= epan_lib.BASE_RANGE_STRING
@@ -193,27 +216,11 @@ class WishpyDissectorBase:
         display = finfo.hfinfo[0].display
         abbrev = epan_ffi.string(finfo.hfinfo[0].abbrev).decode()
 
-        epan_int_types = [
-                epan_lib.FT_INT8,
-                epan_lib.FT_INT16,
-                epan_lib.FT_INT32,
-                epan_lib.FT_INT40,
-                epan_lib.FT_INT48,
-                epan_lib.FT_INT56,
-                epan_lib.FT_INT64]
+        epan_int_types = cls.epan_int_types
+        epan_uint32_types = cls.epan_uint32_types
+        epan_uint_types = cls.epan_uint_types
+        epan_all_int_types = cls.epan_all_int_types
 
-        epan_uint32_types = [
-                epan_lib.FT_CHAR,
-                epan_lib.FT_UINT8,
-                epan_lib.FT_UINT16,
-                epan_lib.FT_UINT32,
-                epan_lib.FT_FRAMENUM]
-
-        epan_uint_types = epan_uint32_types + \
-                [ epan_lib.FT_UINT40, epan_lib.FT_UINT48,
-                epan_lib.FT_UINT56, epan_lib.FT_UINT64]
-
-        epan_all_int_types = epan_int_types + epan_uint_types
 
         if ftype in epan_all_int_types:
             return cls.epan_int_to_str(fvalue, ftype, display, abbrev)
@@ -256,7 +263,6 @@ class WishpyDissectorBase:
         else:
             level = epan_ffi.cast('int *', data_ptr)[0]
 
-        return_str = ""
         node = node_ptr[0]
         finfo = node.finfo
         if finfo != epan_ffi.NULL:
