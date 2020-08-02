@@ -50,6 +50,7 @@ class WishpyDissectorBase:
     BASE_PT_TCP = epan_lib.BASE_PT_TCP
     BASE_PT_UDP = epan_lib.BASE_PT_UDP
     BASE_PT_SCTP = epan_lib.BASE_PT_SCTP
+    BASE_OUI = epan_lib.BASE_OUI
 
     BASE_RANGE_STRING = epan_lib.BASE_RANGE_STRING
     BASE_EXT_STRING = epan_lib.BASE_EXT_STRING
@@ -73,6 +74,7 @@ class WishpyDissectorBase:
 
     FT_INT8 = epan_lib.FT_INT8
     FT_INT16 = epan_lib.FT_INT16
+    FT_INT24 = epan_lib.FT_INT24
     FT_INT32 = epan_lib.FT_INT32
     FT_INT40 = epan_lib.FT_INT40
     FT_INT48 = epan_lib.FT_INT48
@@ -81,6 +83,7 @@ class WishpyDissectorBase:
     FT_CHAR = epan_lib.FT_CHAR
     FT_UINT8 = epan_lib.FT_UINT8
     FT_UINT16 = epan_lib.FT_UINT16
+    FT_UINT24 = epan_lib.FT_UINT24
     FT_UINT32 = epan_lib.FT_UINT32
     FT_UINT40 = epan_lib.FT_UINT40
     FT_UINT48 = epan_lib.FT_UINT48
@@ -103,6 +106,7 @@ class WishpyDissectorBase:
                 FT_CHAR,
                 FT_UINT8,
                 FT_UINT16,
+                FT_UINT24,
                 FT_UINT32,
                 FT_FRAMENUM]
 
@@ -240,6 +244,9 @@ class WishpyDissectorBase:
             if display == cls.BASE_CUSTOM:
                 display = cls.BASE_DEC
 
+            if display == cls.BASE_OUI:
+                display = cls.BASE_HEX
+
             base_format, quote = cls.hfbases[display]
 
         except:
@@ -263,6 +270,25 @@ class WishpyDissectorBase:
         return "{:.9f}".format(value.secs + value.nsecs / 1000000000), False
 
     @classmethod
+    def epan_none_to_str(cls, fvalue, ftype, display, abbrev):
+        return None, None
+
+    to_str_funcs = {
+            FT_ETHER : epan_ether_to_str.__func__,
+            FT_IPv4 : epan_ipv4_to_str.__func__,
+            FT_BOOLEAN : epan_bool_to_str.__func__,
+            FT_STRING : epan_str_to_str.__func__,
+            FT_BYTES : epan_bytes_to_str.__func__,
+            FT_RELATIVE_TIME : epan_reltime_to_str.__func__,
+            FT_ABSOLUTE_TIME : epan_abstime_to_str.__func__,
+            FT_NONE : epan_none_to_str.__func__,
+            FT_PROTOCOL : epan_none_to_str.__func__
+    }
+
+    all_int_to_str_funcs = [epan_int_to_str.__func__] * len(epan_all_int_types)
+    to_str_funcs.update(zip(epan_all_int_types, all_int_to_str_funcs))
+
+    @classmethod
     def value_to_str(cls, finfo):
         """
         Returns string representation of the `finfo.value`
@@ -278,35 +304,13 @@ class WishpyDissectorBase:
         epan_uint_types = cls.epan_uint_types
         epan_all_int_types = cls.epan_all_int_types
 
-        # FIXME: Try this with a dict
-        if ftype in epan_all_int_types:
-            return cls.epan_int_to_str(fvalue, ftype, display, abbrev)
+        try:
+            fn = cls.to_str_funcs[ftype]
+            return fn(cls, fvalue, ftype, display, abbrev)
+        except KeyError as e:
+            #_logger.exception("unknown type: %d", ftype)
 
-        if ftype == cls.FT_ETHER:
-            return cls.epan_ether_to_str(fvalue, ftype, display, abbrev)
-
-        if ftype == cls.FT_IPv4:
-            return cls.epan_ipv4_to_str(fvalue, ftype, display, abbrev)
-
-        if ftype == cls.FT_BOOLEAN:
-            return cls.epan_bool_to_str(fvalue, ftype, display, abbrev)
-
-        if ftype == cls.FT_STRING:
-            return cls.epan_str_to_str(fvalue, ftype, display, abbrev)
-
-        if ftype == cls.FT_BYTES:
-            return cls.epan_bytes_to_str(fvalue, ftype, display, abbrev)
-
-        if ftype == cls.FT_RELATIVE_TIME:
-            return cls.epan_reltime_to_str(fvalue, ftype, display, abbrev)
-
-        if ftype == cls.FT_ABSOLUTE_TIME:
-            return cls.epan_abstime_to_str(fvalue, ftype, display, abbrev)
-
-        if ftype in [cls.FT_NONE, cls.FT_PROTOCOL]:
-            return None, False
-
-        return "{} {}".format(ftype, display), True
+            return "{} {}".format(ftype, display), True
 
     @classmethod
     def print_dissected_tree_pretty(cls, node_ptr, level=1):
