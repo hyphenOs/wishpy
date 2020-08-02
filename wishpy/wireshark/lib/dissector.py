@@ -33,6 +33,8 @@ class WishpyDissectorBase:
     `libwireshark`. Right now this simply prints the dissector tree.
     """
 
+    _pretty = False
+
     epan_int_types = [
                 epan_lib.FT_INT8,
                 epan_lib.FT_INT16,
@@ -252,16 +254,10 @@ class WishpyDissectorBase:
         return "{} {}".format(ftype, display), True
 
     @classmethod
-    def print_dissected_tree(cls, node_ptr, data_ptr):
+    def print_dissected_tree_pretty(cls, node_ptr, level=1):
         """Returns a string that represents a dissected tree.
         """
-
         return_str = ""
-
-        if data_ptr == epan_ffi.NULL:
-            level = 1
-        else:
-            level = epan_ffi.cast('int *', data_ptr)[0]
 
         node = node_ptr[0]
         finfo = node.finfo
@@ -270,7 +266,7 @@ class WishpyDissectorBase:
             hfinfo = finfo.hfinfo[0]
             abbrev = epan_ffi.string(hfinfo.abbrev).decode()
             abbrev_str = "\"{!s}\"".format(abbrev)
-            return_str += abbrev_str + ": "
+            return_str += abbrev_str + " : "
             finfo_display_str, quote = cls.value_to_str(finfo)
             if finfo_display_str:
                 if quote:
@@ -281,8 +277,9 @@ class WishpyDissectorBase:
         if finfo_display_str is not None:
             return_str += finfo_display_str
 
-        data_ptr_new = epan_ffi.new('int *')
-        data_ptr_new[0] = level + 1
+        lspaces = " " * level
+        lspaces_1 = " " * (level - 1)
+        newlevel = level + 1
         child = node.first_child
         if child != epan_ffi.NULL:
 
@@ -291,19 +288,19 @@ class WishpyDissectorBase:
 
                 abbrev_tree = abbrev + "_tree"
                 abbrev_tree_str = "\"{!s}\"".format(abbrev_tree)
-                return_str += "  " * (level -1)
+
+                return_str += lspaces_1
                 return_str += abbrev_tree_str + " : "
 
-            return_str += "{ "
+            return_str += "{"
             return_str += "\n"
             while child != epan_ffi.NULL:
-                return_str += "  " * level
-                return_str += cls.print_dissected_tree(child, data_ptr_new)
+                return_str += lspaces
+                return_str += cls.print_dissected_tree_pretty(child, newlevel)
                 child = child.next
-            return_str += "  " * level
+            return_str += lspaces
 
-            return_str += "\n"
-            return_str += "  " * (level-1)
+            return_str += "\n" + lspaces_1
             return_str += "}"
         else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
             if not finfo_display_str:
@@ -314,13 +311,64 @@ class WishpyDissectorBase:
         return return_str
 
     @classmethod
+    def print_dissected_tree(cls, node_ptr):
+        """Returns a string that represents a dissected tree.
+        """
+        return_str = ""
+
+        node = node_ptr[0]
+        finfo = node.finfo
+        if finfo != epan_ffi.NULL:
+
+            hfinfo = finfo.hfinfo[0]
+            abbrev = epan_ffi.string(hfinfo.abbrev).decode()
+            abbrev_str = "\"{!s}\"".format(abbrev)
+            return_str += abbrev_str + ":"
+            finfo_display_str, quote = cls.value_to_str(finfo)
+            if finfo_display_str:
+                if quote:
+                    finfo_display_str = "\"{!s}\"".format(finfo_display_str)
+        else:
+            finfo_display_str = ""
+
+        if finfo_display_str is not None:
+            return_str += finfo_display_str
+
+        child = node.first_child
+        if child != epan_ffi.NULL:
+
+            if finfo_display_str:
+                return_str += ","
+
+                abbrev_tree = abbrev + "_tree"
+                abbrev_tree_str = "\"{!s}\"".format(abbrev_tree)
+                return_str += abbrev_tree_str + ":"
+
+            return_str += "{"
+            while child != epan_ffi.NULL:
+                return_str += cls.print_dissected_tree(child)
+                child = child.next
+
+            return_str += "}"
+        else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
+            if not finfo_display_str:
+                return_str += "\"\""
+        if node.next != epan_ffi.NULL:
+            return_str += ","
+
+        return return_str
+
+    @classmethod
     def packet_to_json(cls, handle_ptr):
         """ An example method that depicts how to use internal dissector API."""
 
         dissector = handle_ptr[0]
 
         # FIXME: following should be like json dumps
-        s = cls.print_dissected_tree(dissector.tree, epan_ffi.NULL)
+        if cls._pretty:
+            s = cls.print_dissected_tree_pretty(dissector.tree)
+        else:
+            s = cls.print_dissected_tree(dissector.tree)
         try:
             x = json.loads(s, strict=False)
         except Exception as e:
