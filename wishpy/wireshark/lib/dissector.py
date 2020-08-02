@@ -35,39 +35,93 @@ class WishpyDissectorBase:
 
     _pretty = False
 
+    # We are having these definitions in the class because a lot many of them
+    # are used in fast path and having them dereferenced here gives us some
+    # performance, so why not?
+    NULL = epan_ffi.NULL
+    epan_string = epan_ffi.string
+
+    BASE_NONE = epan_lib.BASE_NONE
+    BASE_DEC = epan_lib.BASE_DEC
+    BASE_HEX = epan_lib.BASE_HEX
+    BASE_OCT = epan_lib.BASE_OCT
+    BASE_DEC_HEX = epan_lib.BASE_DEC_HEX
+    BASE_HEX_DEC = epan_lib.BASE_HEX_DEC
+    BASE_PT_TCP = epan_lib.BASE_PT_TCP
+    BASE_PT_UDP = epan_lib.BASE_PT_UDP
+    BASE_PT_SCTP = epan_lib.BASE_PT_SCTP
+
+    BASE_RANGE_STRING = epan_lib.BASE_RANGE_STRING
+    BASE_EXT_STRING = epan_lib.BASE_EXT_STRING
+    BASE_VAL64_STRING = epan_lib.BASE_VAL64_STRING
+    BASE_ALLOW_ZERO = epan_lib.BASE_ALLOW_ZERO
+    BASE_UNIT_STRING = epan_lib.BASE_UNIT_STRING
+    BASE_NO_DISPLAY_VALUE = epan_lib.BASE_NO_DISPLAY_VALUE
+    BASE_PROTOCOL_INFO = epan_lib.BASE_PROTOCOL_INFO
+    BASE_SPECIAL_VALS = epan_lib.BASE_SPECIAL_VALS
+    BASE_CUSTOM = epan_lib.BASE_CUSTOM
+
+    FT_ETHER = epan_lib.FT_ETHER
+    FT_IPv4 = epan_lib.FT_IPv4
+    FT_BOOLEAN = epan_lib.FT_BOOLEAN
+    FT_STRING = epan_lib.FT_STRING
+    FT_BYTES = epan_lib.FT_BYTES
+    FT_RELATIVE_TIME = epan_lib.FT_RELATIVE_TIME
+    FT_ABSOLUTE_TIME = epan_lib.FT_ABSOLUTE_TIME
+    FT_NONE = epan_lib.FT_NONE
+    FT_PROTOCOL = epan_lib.FT_PROTOCOL
+
+    FT_INT8 = epan_lib.FT_INT8
+    FT_INT16 = epan_lib.FT_INT16
+    FT_INT32 = epan_lib.FT_INT32
+    FT_INT40 = epan_lib.FT_INT40
+    FT_INT48 = epan_lib.FT_INT48
+    FT_INT56 = epan_lib.FT_INT56
+    FT_INT64 = epan_lib.FT_INT64
+    FT_CHAR = epan_lib.FT_CHAR
+    FT_UINT8 = epan_lib.FT_UINT8
+    FT_UINT16 = epan_lib.FT_UINT16
+    FT_UINT32 = epan_lib.FT_UINT32
+    FT_UINT40 = epan_lib.FT_UINT40
+    FT_UINT48 = epan_lib.FT_UINT48
+    FT_UINT56 = epan_lib.FT_UINT56
+    FT_UINT64 = epan_lib.FT_UINT64
+    FT_FRAMENUM = epan_lib.FT_FRAMENUM
+
+
+
     epan_int_types = [
-                epan_lib.FT_INT8,
-                epan_lib.FT_INT16,
-                epan_lib.FT_INT32,
-                epan_lib.FT_INT40,
-                epan_lib.FT_INT48,
-                epan_lib.FT_INT56,
-                epan_lib.FT_INT64]
+                FT_INT8,
+                FT_INT16,
+                FT_INT32,
+                FT_INT40,
+                FT_INT48,
+                FT_INT56,
+                FT_INT64]
 
     epan_uint32_types = [
-                epan_lib.FT_CHAR,
-                epan_lib.FT_UINT8,
-                epan_lib.FT_UINT16,
-                epan_lib.FT_UINT32,
-                epan_lib.FT_FRAMENUM]
+                FT_CHAR,
+                FT_UINT8,
+                FT_UINT16,
+                FT_UINT32,
+                FT_FRAMENUM]
 
     epan_uint_types = epan_uint32_types + \
-                [ epan_lib.FT_UINT40, epan_lib.FT_UINT48,
-                epan_lib.FT_UINT56, epan_lib.FT_UINT64]
+            [ FT_UINT40, FT_UINT48, FT_UINT56, FT_UINT64]
 
     epan_all_int_types = epan_int_types + epan_uint_types
 
     # Below are some dict's required for printing few packet types
     hfbases = {
-            epan_lib.BASE_NONE : ('{:d}', False), # Not sure how this is to be treated
-            epan_lib.BASE_DEC : ('{:d}', False),
-            epan_lib.BASE_HEX : ('0x{:x}', True),
-            epan_lib.BASE_OCT : ('{:o}', True),
-            epan_lib.BASE_DEC_HEX: ('{:d}(0x{:x})', True),
-            epan_lib.BASE_HEX_DEC: ('0x{:x}({:d})', True),
-            epan_lib.BASE_PT_TCP: ('{:d}', False),
-            epan_lib.BASE_PT_UDP: ('{:d}', False),
-            epan_lib.BASE_PT_SCTP: ('{:d}', False)
+            BASE_NONE : ('{:d}', False), # Not sure how this is to be treated
+            BASE_DEC : ('{:d}', False),
+            BASE_HEX : ('0x{:x}', True),
+            BASE_OCT : ('{:o}', True),
+            BASE_DEC_HEX: ('{:d}(0x{:x})', True),
+            BASE_HEX_DEC: ('0x{:x}({:d})', True),
+            BASE_PT_TCP: ('{:d}', False),
+            BASE_PT_UDP: ('{:d}', False),
+            BASE_PT_SCTP: ('{:d}', False)
 
      }
 
@@ -76,7 +130,8 @@ class WishpyDissectorBase:
         """Removes the Ctrl Characters from the string.
         """
         # FIXME: May be we should replace them with their unicode code points
-        return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C")
+        category_fn = unicodedata.category
+        return "".join(ch for ch in s if category_fn(ch)[0] != "C")
 
     @classmethod
     def func_not_supported(cls, *args):
@@ -105,13 +160,13 @@ class WishpyDissectorBase:
 
         # If display is BASE_NONE, utf-8 is fine, but for others, not always! (GSM-Unicode)
         if display == 0:
-            x = epan_ffi.string(value).decode("utf-8").\
+            x = cls.epan_string(value).decode().\
                     replace('\\', '\\\\').\
                     replace('"', '\\"')
             return cls.remove_ctrl_chars(x), True
         else:
             try:
-                x = epan_ffi.string(value).decode("utf-8").\
+                x = cls.epan_string(value).decode("utf-8").\
                         replace('\\', '\\\\').\
                         replace('"', '\\"')
                 return cls.remove_ctrl_chars(x), True
@@ -157,33 +212,33 @@ class WishpyDissectorBase:
         try:
             # FIXME: We can definitely do better than these `if`s.
             # We are ignoring all fancy display options for now
-            if display & epan_lib.BASE_RANGE_STRING:
-                display ^= epan_lib.BASE_RANGE_STRING
+            if display & cls.BASE_RANGE_STRING:
+                display ^= cls.BASE_RANGE_STRING
 
-            if display & epan_lib.BASE_EXT_STRING:
-                display ^= epan_lib.BASE_EXT_STRING
+            if display & cls.BASE_EXT_STRING:
+                display ^= cls.BASE_EXT_STRING
 
-            if display & epan_lib.BASE_VAL64_STRING:
-                display ^= epan_lib.BASE_VAL64_STRING
+            if display & cls.BASE_VAL64_STRING:
+                display ^= cls.BASE_VAL64_STRING
 
-            if display & epan_lib.BASE_ALLOW_ZERO:
-                display ^= epan_lib.BASE_ALLOW_ZERO
+            if display & cls.BASE_ALLOW_ZERO:
+                display ^= cls.BASE_ALLOW_ZERO
 
-            if display & epan_lib.BASE_UNIT_STRING:
-                display ^= epan_lib.BASE_UNIT_STRING
+            if display & cls.BASE_UNIT_STRING:
+                display ^= cls.BASE_UNIT_STRING
 
-            if display & epan_lib.BASE_NO_DISPLAY_VALUE:
-                display ^= epan_lib.BASE_NO_DISPLAY_VALUE
+            if display & cls.BASE_NO_DISPLAY_VALUE:
+                display ^= cls.BASE_NO_DISPLAY_VALUE
 
-            if display & epan_lib.BASE_PROTOCOL_INFO:
-                display ^= epan_lib.BASE_PROTOCOL_INFO
+            if display & cls.BASE_PROTOCOL_INFO:
+                display ^= cls.BASE_PROTOCOL_INFO
 
-            if display & epan_lib.BASE_SPECIAL_VALS:
-                display ^= epan_lib.BASE_SPECIAL_VALS
+            if display & cls.BASE_SPECIAL_VALS:
+                display ^= cls.BASE_SPECIAL_VALS
 
             # Change the custom display to `Decimal` for now
-            if display == epan_lib.BASE_CUSTOM:
-                display = epan_lib.BASE_DEC
+            if display == cls.BASE_CUSTOM:
+                display = cls.BASE_DEC
 
             base_format, quote = cls.hfbases[display]
 
@@ -216,39 +271,39 @@ class WishpyDissectorBase:
         fvalue = finfo.value
         ftype = finfo.hfinfo[0].type
         display = finfo.hfinfo[0].display
-        abbrev = epan_ffi.string(finfo.hfinfo[0].abbrev).decode()
+        abbrev = cls.epan_string(finfo.hfinfo[0].abbrev).decode()
 
         epan_int_types = cls.epan_int_types
         epan_uint32_types = cls.epan_uint32_types
         epan_uint_types = cls.epan_uint_types
         epan_all_int_types = cls.epan_all_int_types
 
-
+        # FIXME: Try this with a dict
         if ftype in epan_all_int_types:
             return cls.epan_int_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype == epan_lib.FT_ETHER:
+        if ftype == cls.FT_ETHER:
             return cls.epan_ether_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype == epan_lib.FT_IPv4:
+        if ftype == cls.FT_IPv4:
             return cls.epan_ipv4_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype == epan_lib.FT_BOOLEAN:
+        if ftype == cls.FT_BOOLEAN:
             return cls.epan_bool_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype == epan_lib.FT_STRING:
+        if ftype == cls.FT_STRING:
             return cls.epan_str_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype == epan_lib.FT_BYTES:
+        if ftype == cls.FT_BYTES:
             return cls.epan_bytes_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype == epan_lib.FT_RELATIVE_TIME:
+        if ftype == cls.FT_RELATIVE_TIME:
             return cls.epan_reltime_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype == epan_lib.FT_ABSOLUTE_TIME:
+        if ftype == cls.FT_ABSOLUTE_TIME:
             return cls.epan_abstime_to_str(fvalue, ftype, display, abbrev)
 
-        if ftype in [epan_lib.FT_NONE, epan_lib.FT_PROTOCOL]:
+        if ftype in [cls.FT_NONE, cls.FT_PROTOCOL]:
             return None, False
 
         return "{} {}".format(ftype, display), True
@@ -261,10 +316,10 @@ class WishpyDissectorBase:
 
         node = node_ptr[0]
         finfo = node.finfo
-        if finfo != epan_ffi.NULL:
+        if finfo != cls.NULL:
 
             hfinfo = finfo.hfinfo[0]
-            abbrev = epan_ffi.string(hfinfo.abbrev).decode()
+            abbrev = cls.epan_string(hfinfo.abbrev).decode()
             abbrev_str = "\"{!s}\"".format(abbrev)
             return_str += abbrev_str + " : "
             finfo_display_str, quote = cls.value_to_str(finfo)
@@ -281,7 +336,7 @@ class WishpyDissectorBase:
         lspaces_1 = " " * (level - 1)
         newlevel = level + 1
         child = node.first_child
-        if child != epan_ffi.NULL:
+        if child != cls.NULL:
 
             if finfo_display_str:
                 return_str += ",\n"
@@ -294,7 +349,7 @@ class WishpyDissectorBase:
 
             return_str += "{"
             return_str += "\n"
-            while child != epan_ffi.NULL:
+            while child != cls.NULL:
                 return_str += lspaces
                 return_str += cls.print_dissected_tree_pretty(child, newlevel)
                 child = child.next
@@ -305,7 +360,7 @@ class WishpyDissectorBase:
         else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
             if not finfo_display_str:
                 return_str += "\"\""
-        if node.next != epan_ffi.NULL:
+        if node.next != cls.NULL:
             return_str += ",\n"
 
         return return_str
@@ -318,10 +373,10 @@ class WishpyDissectorBase:
 
         node = node_ptr[0]
         finfo = node.finfo
-        if finfo != epan_ffi.NULL:
+        if finfo != cls.NULL:
 
             hfinfo = finfo.hfinfo[0]
-            abbrev = epan_ffi.string(hfinfo.abbrev).decode()
+            abbrev = cls.epan_string(hfinfo.abbrev).decode()
             abbrev_str = "\"{!s}\"".format(abbrev)
             return_str += abbrev_str + ":"
             finfo_display_str, quote = cls.value_to_str(finfo)
@@ -335,7 +390,7 @@ class WishpyDissectorBase:
             return_str += finfo_display_str
 
         child = node.first_child
-        if child != epan_ffi.NULL:
+        if child != cls.NULL:
 
             if finfo_display_str:
                 return_str += ","
@@ -345,7 +400,7 @@ class WishpyDissectorBase:
                 return_str += abbrev_tree_str + ":"
 
             return_str += "{"
-            while child != epan_ffi.NULL:
+            while child != cls.NULL:
                 return_str += cls.print_dissected_tree(child)
                 child = child.next
 
@@ -353,7 +408,7 @@ class WishpyDissectorBase:
         else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
             if not finfo_display_str:
                 return_str += "\"\""
-        if node.next != epan_ffi.NULL:
+        if node.next != cls.NULL:
             return_str += ","
 
         return return_str
@@ -424,7 +479,7 @@ class WishpyDissectorBase:
         self._elapsed_time_ptr = epan_ffi.new('nstime_t *')
 
         self._ref_frame_data_ptr = epan_ffi.new('frame_data **')
-        self._ref_frame_data_ptr[0] = epan_ffi.NULL
+        self._ref_frame_data_ptr[0] = self.NULL
 
         self._first_frame_data = epan_ffi.new('frame_data *')
         self._last_frame_data = epan_ffi.new('frame_data *')
