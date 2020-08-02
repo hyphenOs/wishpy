@@ -324,12 +324,12 @@ class WishpyDissectorBase:
 
             hfinfo = finfo.hfinfo[0]
             abbrev = cls.epan_string(hfinfo.abbrev).decode()
-            abbrev_str = "\"{!s}\"".format(abbrev)
+            abbrev_str = '"' + abbrev + '"'
             return_str += abbrev_str + " : "
             finfo_display_str, quote = cls.value_to_str(finfo)
             if finfo_display_str:
                 if quote:
-                    finfo_display_str = "\"{!s}\"".format(finfo_display_str)
+                    finfo_display_str = '"' + finfo_display_str + '"'
         else:
             finfo_display_str = ""
 
@@ -346,7 +346,7 @@ class WishpyDissectorBase:
                 return_str += ",\n"
 
                 abbrev_tree = abbrev + "_tree"
-                abbrev_tree_str = "\"{!s}\"".format(abbrev_tree)
+                abbrev_tree_str = '"' + abbrev_tree + '"'
 
                 return_str += lspaces_1
                 return_str += abbrev_tree_str + " : "
@@ -381,12 +381,12 @@ class WishpyDissectorBase:
 
             hfinfo = finfo.hfinfo[0]
             abbrev = cls.epan_string(hfinfo.abbrev).decode()
-            abbrev_str = "\"{!s}\"".format(abbrev)
+            abbrev_str = '"' + abbrev + '"'
             return_str += abbrev_str + ":"
             finfo_display_str, quote = cls.value_to_str(finfo)
             if finfo_display_str:
                 if quote:
-                    finfo_display_str = "\"{!s}\"".format(finfo_display_str)
+                    finfo_display_str = '"' + finfo_display_str + '"'
         else:
             finfo_display_str = ""
 
@@ -400,7 +400,7 @@ class WishpyDissectorBase:
                 return_str += ","
 
                 abbrev_tree = abbrev + "_tree"
-                abbrev_tree_str = "\"{!s}\"".format(abbrev_tree)
+                abbrev_tree_str = '"' + abbrev_tree + '"'
                 return_str += abbrev_tree_str + ":"
 
             return_str += "{"
