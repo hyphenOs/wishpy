@@ -35,6 +35,8 @@ class WishpyDissectorBase:
 
     _pretty = False
 
+    _test_json = False
+
     # We are having these definitions in the class because a lot many of them
     # are used in fast path and having them dereferenced here gives us some
     # performance, so why not?
@@ -139,6 +141,14 @@ class WishpyDissectorBase:
     FTREPR_DISPLAY = epan_lib.FTREPR_DISPLAY
     fvalue_to_string_repr = epan_lib.fvalue_to_string_repr
     wmem_free = epan_lib.wmem_free
+
+    @classmethod
+    def enable_json_test(cls):
+        cls._test_json = True
+
+    @classmethod
+    def enable_pretty_print(cls):
+        self._pretty = True
 
     @classmethod
     def remove_ctrl_chars(cls, s):
@@ -508,8 +518,8 @@ class WishpyDissectorBase:
         else:
             s = cls.print_dissected_tree_ftype_api(dissector.tree)
         try:
-            pass
-            #_ = json.loads(s, strict=False)
+            if cls._test_json:
+                _ = json.loads(s, strict=False)
         except json.decoder.JSONDecodeError as e:
             _logger.exception("packet_to_json", e.doc)
             return {}
