@@ -67,6 +67,11 @@ typedef struct _wmem_allocator_t wmem_allocator_t;
 
 """
 
+epan_wmem_h_funcs_cdef = """
+
+extern void wmem_free(wmem_allocator_t *allocator, void *ptr);
+"""
+
 wmem_allocator_struct = """
 /* See section "4. Internal Design" of doc/README.wmem for details
  * on this structure */
