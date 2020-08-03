@@ -334,32 +334,53 @@ class WishpyDissectorBase:
             return "{} {}".format(ftype, display), True
 
     @classmethod
-    def print_dissected_tree_pretty(cls, node_ptr, level=1):
+    def print_dissected_tree_pretty_ftype_api(cls, node_ptr, level=1):
         """Returns a string that represents a dissected tree.
         """
         return_str = ""
 
         node = node_ptr[0]
         finfo = node.finfo
+
+        finfo_display_str = None
         if finfo != cls.NULL:
 
             hfinfo = finfo.hfinfo[0]
+            display = hfinfo.display
             abbrev = cls.epan_string(hfinfo.abbrev).decode()
             abbrev_str = '"' + abbrev + '"'
             return_str += abbrev_str + " : "
-            finfo_display_str, quote = cls.value_to_str(finfo)
-            if finfo_display_str:
-                if quote:
-                    finfo_display_str = '"' + finfo_display_str + '"'
-        else:
-            finfo_display_str = ""
+            finfo_str = cls.fvalue_to_string_repr(
+                    cls.NULL,
+                    cls.addressof(finfo[0].value),
+                    cls.FTREPR_DISPLAY,
+                    display)
 
-        if finfo_display_str is not None:
-            return_str += finfo_display_str
+            if finfo_str != cls.NULL:
+                finfo_display_str = cls.epan_string(finfo_str).decode()
+                if hfinfo.type not in cls.unquoted_types:
+                    if hfinfo.type == cls.FT_STRING:
+                        finfo_display_str = finfo_display_str.\
+                                replace('\\', '\\\\').replace('"', '\\"')
+                        finfo_display_str = cls.remove_ctrl_chars(finfo_display_str)
+                    finfo_display_str = '"' + finfo_display_str + '"'
+                else:
+                    try:
+                        _, quote = cls.hfbases[display]
+                    except KeyError as e:
+                        quote = True
+
+                    if quote:
+                        finfo_display_str = '"' + finfo_display_str + '"'
+
+                cls.wmem_free(cls.NULL, finfo_str)
+
+                return_str += finfo_display_str
 
         lspaces = " " * level
         lspaces_1 = " " * (level - 1)
         newlevel = level + 1
+
         child = node.first_child
         if child != cls.NULL:
 
@@ -376,7 +397,7 @@ class WishpyDissectorBase:
             return_str += "\n"
             while child != cls.NULL:
                 return_str += lspaces
-                return_str += cls.print_dissected_tree_pretty(child, newlevel)
+                return_str += cls.print_dissected_tree_pretty_ftype_api(child, newlevel)
                 child = child.next
             return_str += lspaces
 
@@ -514,7 +535,7 @@ class WishpyDissectorBase:
 
         # FIXME: following should be like json dumps
         if cls._pretty:
-            s = cls.print_dissected_tree_pretty(dissector.tree)
+            s = cls.print_dissected_tree_pretty_ftype_api(dissector.tree)
         else:
             s = cls.print_dissected_tree_ftype_api(dissector.tree)
         try:
