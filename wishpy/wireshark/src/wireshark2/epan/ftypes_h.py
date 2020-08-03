@@ -149,6 +149,51 @@ typedef struct _fvalue_t {
 } fvalue_t;
 
 """
+epan_ftypes_h_funcs_cdef = """
+
+
+/* Return a string representing the name of the type */
+
+extern
+const char*
+ftype_name(ftenum_t ftype);
+
+/* Return a string presenting a "pretty" representation of the
+ * name of the type. The pretty name means more to the user than
+ * that "FT_*" name. */
+extern
+const char*
+ftype_pretty_name(ftenum_t ftype);
+
+
+extern
+fvalue_t*
+fvalue_from_unparsed(ftenum_t ftype, const char *s, gboolean allow_partial_value, gchar **err_msg);
+
+/* Returns the length of the string required to hold the
+ * string representation of the the field value.
+ *
+ * Returns -1 if the string cannot be represented in the given rtype.
+ *
+ * The length DOES NOT include the terminating NUL. */
+extern
+int
+fvalue_string_repr_len(fvalue_t *fv, ftrepr_t rtype, int field_display);
+
+/* Creates the string representation of the field value.
+ * Memory for the buffer is allocated based on wmem allocator
+ * provided.
+ *
+ * field_display parameter should be a BASE_ value (enum field_display_e)
+ * BASE_NONE should be used if field information isn't available.
+ *
+ * Returns NULL if the string cannot be represented in the given rtype.*/
+extern char *
+fvalue_to_string_repr(wmem_allocator_t *scope, fvalue_t *fv, ftrepr_t rtype, int field_display);
+
+extern ftenum_t
+fvalue_type_ftenum(fvalue_t *fv);
+"""
 _ = """
 
 #ifndef __FTYPES_H__
@@ -172,18 +217,6 @@ ftypes_initialize(void);
  * duplicate fields be registered of these two types. */
 gboolean
 ftype_similar_types(const enum ftenum ftype_a, const enum ftenum ftype_b);
-
-/* Return a string representing the name of the type */
-WS_DLL_PUBLIC
-const char*
-ftype_name(ftenum_t ftype);
-
-/* Return a string presenting a "pretty" representation of the
- * name of the type. The pretty name means more to the user than
- * that "FT_*" name. */
-WS_DLL_PUBLIC
-const char*
-ftype_pretty_name(ftenum_t ftype);
 
 /* Returns length of field in packet, or 0 if not determinable/defined. */
 int
@@ -243,37 +276,6 @@ fvalue_new(ftenum_t ftype);
 
 void
 fvalue_init(fvalue_t *fv, ftenum_t ftype);
-
-WS_DLL_PUBLIC
-fvalue_t*
-fvalue_from_unparsed(ftenum_t ftype, const char *s, gboolean allow_partial_value, gchar **err_msg);
-
-fvalue_t*
-fvalue_from_string(ftenum_t ftype, const char *s, gchar **err_msg);
-
-/* Returns the length of the string required to hold the
- * string representation of the the field value.
- *
- * Returns -1 if the string cannot be represented in the given rtype.
- *
- * The length DOES NOT include the terminating NUL. */
-WS_DLL_PUBLIC
-int
-fvalue_string_repr_len(fvalue_t *fv, ftrepr_t rtype, int field_display);
-
-/* Creates the string representation of the field value.
- * Memory for the buffer is allocated based on wmem allocator
- * provided.
- *
- * field_display parameter should be a BASE_ value (enum field_display_e)
- * BASE_NONE should be used if field information isn't available.
- *
- * Returns NULL if the string cannot be represented in the given rtype.*/
-WS_DLL_PUBLIC char *
-fvalue_to_string_repr(wmem_allocator_t *scope, fvalue_t *fv, ftrepr_t rtype, int field_display);
-
-WS_DLL_PUBLIC ftenum_t
-fvalue_type_ftenum(fvalue_t *fv);
 
 const char*
 fvalue_type_name(fvalue_t *fv);
