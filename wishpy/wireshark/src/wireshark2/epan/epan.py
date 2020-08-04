@@ -107,6 +107,7 @@ _sources = '''
             #include <epan/epan_dissect.h>
             #include <epan/epan.h>
             #include <epan/packet.h>
+            #include <epan/ftypes/ftypes.h>
             #include <wsutil/privileges.h>
 
             struct packet_provider_data {

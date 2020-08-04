@@ -5,6 +5,7 @@ from cffi import PkgConfigError
 from .typedefs_h import libc_typedefs_h_cdef
 
 from .bpf_h import libpcap_bpf_h_cdef
+from .dlt_h import libpcap_dlt_h_cdef
 
 from .pcap_h import (
         libpcap_pcap_h_all_cdef,
@@ -15,6 +16,7 @@ libpcap_ffi = FFI()
 
 libpcap_ffi.cdef(libc_typedefs_h_cdef)
 libpcap_ffi.cdef(libpcap_bpf_h_cdef)
+libpcap_ffi.cdef(libpcap_dlt_h_cdef)
 
 libpcap_ffi.cdef(libpcap_pcap_h_all_cdef)
 libpcap_ffi.cdef(libpcap_pcap_h_nowin_cdef)

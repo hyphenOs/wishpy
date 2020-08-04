@@ -52,7 +52,7 @@ class TestPcapy(unittest.TestCase):
         del hdr
         self.assertEqual(refNone, sys.getrefcount(None))
 
-    def _testBPFFilter(self):
+    def testBPFFilter(self):
         """
         #3 disabled -- bpf not supported yettest offline BPFFilter
         """
@@ -148,7 +148,7 @@ class TestPcapy(unittest.TestCase):
         with self.assertRaises(ValueError):
             r.next()
 
-    def _test_get_bpf(self):
+    def test_get_bpf(self):
         """
         #9 disabled -- Test the context manager support
         """

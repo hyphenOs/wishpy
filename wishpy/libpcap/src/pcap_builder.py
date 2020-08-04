@@ -13,3 +13,4 @@ if __name__ == '__main__':
             extra_compile_args=_extra_compile_args)
 
     print(libpcap_lib)
+    print(dir(libpcap_lib))

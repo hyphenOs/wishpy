@@ -13,9 +13,32 @@ from .libpcap_ext import ffi as _pcap_ffi
 
 _logger = logging.getLogger(__name__)
 
+DLT_NULL = _pcap_lib.DLT_NULL
+DLT_EN10MB = _pcap_lib.DLT_EN10MB
+DLT_IEEE802 = _pcap_lib.DLT_IEEE802
+DLT_ARCNET = _pcap_lib.DLT_ARCNET
+DLT_SLIP = _pcap_lib.DLT_SLIP
+DLT_PPP = _pcap_lib.DLT_PPP
+DLT_FDDI = _pcap_lib.DLT_FDDI
+DLT_ATM_RFC1483 = _pcap_lib.DLT_ATM_RFC1483
+DLT_RAW = _pcap_lib.DLT_RAW
+DLT_PPP_SERIAL = _pcap_lib.DLT_PPP_SERIAL
+DLT_PPP_ETHER = _pcap_lib.DLT_PPP_ETHER
+DLT_C_HDLC = _pcap_lib.DLT_C_HDLC
+DLT_IEEE802_11 = _pcap_lib.DLT_IEEE802_11
+DLT_LOOP = _pcap_lib.DLT_LOOP
+DLT_LINUX_SLL = _pcap_lib.DLT_LINUX_SLL
+DLT_LTALK = _pcap_lib.DLT_LTALK
+
+PCAP_D_INOUT = _pcap_lib.PCAP_D_INOUT
+PCAP_D_IN = _pcap_lib.PCAP_D_IN
+PCAP_D_OUT = _pcap_lib.PCAP_D_OUT
+
 class PcapError(Exception):
     pass
 
+class BPFError(Exception):
+    pass
 
 def open_live(device, snaplen, promisc, to_ms):
     """Returns a live capture class Reader for a given device
@@ -110,16 +133,98 @@ def findalldevs():
 
     return interface_names
 
-def compile():
-    pass
+def compile(linktype, snaplen, filterstr, optimize=False, netmask=0):
+    """Creates a BPFProgram object if valid arguments and returns.
 
+    Args:
+        linktype: integer -  one of the `DLT_XXX`
+        snaplen: integer - Max 2^^16
+        filterstr: string - BPF filter string
+        optiomize: boolean - To optimize or not (default=False)
+        netmask: netmask - Netmask (default=0)
 
+    Returns:
+        BPFProgram:
+
+    Raises:
+        PcapError:
+    """
+    try:
+
+        return BPFProgram(filterstr, linktype, snaplen, optimize, netmask)
+
+    except Exception as e:
+        raise PcapError("Unknown Error Occurred.")
 def create():
     pass
 
 
 class BPFProgram:
-    pass
+    """Class representing a `BPF` program.
+    """
+
+    def __init__(self, filterstr, linktype=DLT_EN10MB,
+            snaplen=(1<<16), optimize=False, netmask=0):
+        """Returns the `_BPFProgram` object from passed filterstring.
+
+        Args:
+            filterstring: string - BPF filter string
+            linktype (optional): integer - Link Type (default 1)
+        """
+        pcap_handle = _pcap_lib.pcap_open_dead(linktype, snaplen)
+        if pcap_handle == _pcap_ffi.NULL:
+            raise PcapError("Invalid linktype or snaplen")
+
+        bpf_handle = _pcap_ffi.new('struct bpf_program *')
+
+        result = _pcap_lib.pcap_compile(
+                pcap_handle,
+                bpf_handle,
+                filterstr.encode(),
+                int(optimize),
+                netmask)
+        _pcap_lib.pcap_close(pcap_handle)
+
+        if result != 0:
+            result_str = _pcap_lib.pcap_geterr(self.__pcap_handle)
+            raise BPFError(_pcap_ffi.string(result_str).decode())
+
+        self.__bpf_handle = bpf_handle
+
+
+    def filter(self, packet):
+        """Filter's packet using internal BPF handle.
+
+        Args:
+            packet: bytes - Array
+        Returns:
+            0 on success,
+        """
+        packetlen = len(packet)
+
+        bpf_handle = self.__bpf_handle[0]
+
+        result = _pcap_lib.bpf_filter(
+                bpf_handle.bf_insns,
+                packet,
+                packetlen, packetlen)
+
+        return result
+
+    def get_bpf(self):
+        """Returns internal instructions as a list of tuples.
+
+        """
+        bpf = self.__bpf_handle[0]
+        count = bpf.bf_len
+
+        instructions = []
+        for i in range(count):
+            ins = bpf.bf_insns[i]
+            instructions.append((ins.code, ins.jt, ins.jf, ins.k))
+
+        return instructions
+
 
 
 class Reader:
@@ -150,7 +255,7 @@ class Reader:
         try:
             pcap_close(self.__pcap_handle)
         except:
-            _logger.warning("Reader.close")
+            pass
         finally:
             self.__pcap_handle = None
 
@@ -305,10 +410,10 @@ class Reader:
         pkthdr_ptr0 = pkthdr_ptr[0]
         caplen = pkthdr_ptr0.caplen
 
-        pkt_data = _pcap_ffi.string(pktbuf_ptr[0])
+        pkt_data = _pcap_ffi.unpack(pktbuf_ptr[0], caplen)
         pkt_hdr = Pkthdr(pkthdr_ptr0)
 
-        return pkt_hdr, pkt_data
+        return pkt_hdr, bytes(pkt_data)
 
 
     def sendpacket(self, data, length):
@@ -474,8 +579,10 @@ class Pkthdr:
 
 
 class _Dumper:
-    """ Internal class Dumper. 'pcapy' does not provide an API to directly
-        use this class. We may provide it.
+    """ Internal class Dumper.
+
+    'pcapy' does not provide an API to directly use this class. We may provide
+    these APIs later.
     """
     _pcap_handle = None
 
@@ -501,7 +608,7 @@ class _Dumper:
             try:
                 _pcap_lib.pcap_dump_close(self.__dumper)
             except:
-                _logger.warning("Reader.close")
+                pass
             finally:
                 self.__dumper = None
 
@@ -560,6 +667,7 @@ if __name__ == '__main__':
     print(findalldevs())
     r = open_live(lookupdev(), 0, 0, 10)
     print(r)
-    print(r.set_promisc(1))
-    print(r.close())
-    #print(r.datalink())
+    #print(r.set_promisc(1))
+    print(r.datalink())
+    b = compile(1, 4096, "tcp", 0, 0)
+    b2 = BPFProgram("tcp")
