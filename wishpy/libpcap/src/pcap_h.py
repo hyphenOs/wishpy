@@ -185,12 +185,6 @@ struct pcap_if {
 #define PCAP_IF_LOOPBACK				0x00000001	/* interface is loopback */
 #define PCAP_IF_UP					0x00000002	/* interface is up */
 #define PCAP_IF_RUNNING					0x00000004	/* interface is running */
-#define PCAP_IF_WIRELESS				0x00000008	/* interface is wireless (*NOT* necessarily Wi-Fi!) */
-#define PCAP_IF_CONNECTION_STATUS			0x00000030	/* connection status: */
-#define PCAP_IF_CONNECTION_STATUS_UNKNOWN		0x00000000	/* unknown */
-#define PCAP_IF_CONNECTION_STATUS_CONNECTED		0x00000010	/* connected */
-#define PCAP_IF_CONNECTION_STATUS_DISCONNECTED		0x00000020	/* disconnected */
-#define PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE	0x00000030	/* not applicable */
 
 /*
  * Representation of an interface address.
@@ -286,13 +280,6 @@ extern const char *pcap_tstamp_type_val_to_description(int);
  * that's high-precision; it might be more expensive to fetch.  It is
  * synchronized with the system clock.
  *
- * PCAP_TSTAMP_HOST_HIPREC_UNSYNCED is a time stamp, provided by the host
- * machine, that's high-precision; it might be more expensive to fetch.
- * It is not synchronized with the system clock, and might have
- * problems with time stamps for packets received on different CPUs,
- * depending on the platform.  It might be more likely to be strictly
- * monotonic than PCAP_TSTAMP_HOST_HIPREC.
- *
  * PCAP_TSTAMP_ADAPTER is a high-precision time stamp supplied by the
  * capture device; it's synchronized with the system clock.
  *
@@ -316,7 +303,6 @@ extern const char *pcap_tstamp_type_val_to_description(int);
 #define PCAP_TSTAMP_HOST_HIPREC			2	/* host-provided, high precision, synced with the system clock */
 #define PCAP_TSTAMP_ADAPTER			3	/* device-provided, synced with the system clock */
 #define PCAP_TSTAMP_ADAPTER_UNSYNCED		4	/* device-provided, not synced with the system clock */
-#define PCAP_TSTAMP_HOST_HIPREC_UNSYNCED	5	/* host-provided, high precision, not synced with the system clock */
 
 /*
  * Time stamp resolution types.
@@ -365,12 +351,10 @@ extern void	pcap_free_datalinks(int *);
 extern int	pcap_datalink_name_to_val(const char *);
 extern const char *pcap_datalink_val_to_name(int);
 extern const char *pcap_datalink_val_to_description(int);
-extern const char *pcap_datalink_val_to_description_or_dlt(int);
 extern int	pcap_snapshot(pcap_t *);
 extern int	pcap_is_swapped(pcap_t *);
 extern int	pcap_major_version(pcap_t *);
 extern int	pcap_minor_version(pcap_t *);
-extern int	pcap_bufsize(pcap_t *);
 
 /* XXX */
 extern FILE	*pcap_file(pcap_t *);
@@ -381,7 +365,6 @@ extern pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 extern pcap_dumper_t *pcap_dump_open_append(pcap_t *, const char *);
 extern FILE	*pcap_dump_file(pcap_dumper_t *);
 extern long	pcap_dump_ftell(pcap_dumper_t *);
-extern int64_t	pcap_dump_ftell64(pcap_dumper_t *);
 extern int	pcap_dump_flush(pcap_dumper_t *);
 extern void	pcap_dump_close(pcap_dumper_t *);
 extern void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
@@ -411,98 +394,6 @@ extern char	*bpf_image(const struct bpf_insn *, int);
 extern void	bpf_dump(const struct bpf_program *, int);
 
 /*
- * Flags to pass to pcap_open().
- */
-
-/*
- * Specifies whether promiscuous mode is to be used.
- */
-#define PCAP_OPENFLAG_PROMISCUOUS		0x00000001
-
-/*
- * Specifies, for an RPCAP capture, whether the data transfer (in
- * case of a remote capture) has to be done with UDP protocol.
- *
- * If it is '1' if you want a UDP data connection, '0' if you want
- * a TCP data connection; control connection is always TCP-based.
- * A UDP connection is much lighter, but it does not guarantee that all
- * the captured packets arrive to the client workstation. Moreover,
- * it could be harmful in case of network congestion.
- * This flag is meaningless if the source is not a remote interface.
- * In that case, it is simply ignored.
- */
-#define PCAP_OPENFLAG_DATATX_UDP		0x00000002
-
-/*
- * Specifies whether the remote probe will capture its own generated
- * traffic.
- *
- * In case the remote probe uses the same interface to capture traffic
- * and to send data back to the caller, the captured traffic includes
- * the RPCAP traffic as well.  If this flag is turned on, the RPCAP
- * traffic is excluded from the capture, so that the trace returned
- * back to the collector is does not include this traffic.
- *
- * Has no effect on local interfaces or savefiles.
- */
-#define PCAP_OPENFLAG_NOCAPTURE_RPCAP		0x00000004
-
-/*
- * Specifies whether the local adapter will capture its own generated traffic.
- *
- * This flag tells the underlying capture driver to drop the packets
- * that were sent by itself.  This is useful when building applications
- * such as bridges that should ignore the traffic they just sent.
- *
- * Supported only on Windows.
- */
-#define PCAP_OPENFLAG_NOCAPTURE_LOCAL		0x00000008
-
-/*
- * This flag configures the adapter for maximum responsiveness.
- *
- * In presence of a large value for nbytes, WinPcap waits for the arrival
- * of several packets before copying the data to the user. This guarantees
- * a low number of system calls, i.e. lower processor usage, i.e. better
- * performance, which is good for applications like sniffers. If the user
- * sets the PCAP_OPENFLAG_MAX_RESPONSIVENESS flag, the capture driver will
- * copy the packets as soon as the application is ready to receive them.
- * This is suggested for real time applications (such as, for example,
- * a bridge) that need the best responsiveness.
- *
- * The equivalent with pcap_create()/pcap_activate() is "immediate mode".
- */
-#define PCAP_OPENFLAG_MAX_RESPONSIVENESS	0x00000010
-
-/*
- * This routine can open a savefile, a local device, or a device on
- * a remote machine running an RPCAP server.
- *
- * For opening a savefile, the pcap_open_offline routines can be used,
- * and will work just as well; code using them will work on more
- * platforms than code using pcap_open() to open savefiles.
- *
- * For opening a local device, pcap_open_live() can be used; it supports
- * most of the capabilities that pcap_open() supports, and code using it
- * will work on more platforms than code using pcap_open().  pcap_create()
- * and pcap_activate() can also be used; they support all capabilities
- * that pcap_open() supports, except for the Windows-only
- * PCAP_OPENFLAG_NOCAPTURE_LOCAL, and support additional capabilities.
- *
- * For opening a remote capture, pcap_open() is currently the only
- * API available.
- */
-/* FIXME: Not supported in v1.9 - may be some compile flags?
-extern pcap_t	*pcap_open(const char *source, int snaplen, int flags,
-	    int read_timeout, struct pcap_rmtauth *auth, char *errbuf);
-extern int	pcap_createsrcstr(char *source, int type, const char *host,
-	    const char *port, const char *name, char *errbuf);
-extern int	pcap_parsesrcstr(const char *source, int *type, char *host,
-	    char *port, char *name, char *errbuf);
-
-*/
-
-/*
  * This routine can scan a directory for savefiles, list local capture
  * devices, or list capture devices on a remote machine running an RPCAP
  * server.
@@ -526,77 +417,6 @@ extern int	pcap_findalldevs_ex(const char *source,
 	    struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf);
 */
 
-/*
- * Sampling methods.
- *
- * These allow pcap_loop(), pcap_dispatch(), pcap_next(), and pcap_next_ex()
- * to see only a sample of packets, rather than all packets.
- *
- * Currently, they work only on Windows local captures.
- */
-
-/*
- * Specifies that no sampling is to be done on the current capture.
- *
- * In this case, no sampling algorithms are applied to the current capture.
- */
-#define PCAP_SAMP_NOSAMP	0
-
-/*
- * Specifies that only 1 out of N packets must be returned to the user.
- *
- * In this case, the 'value' field of the 'pcap_samp' structure indicates the
- * number of packets (minus 1) that must be discarded before one packet got
- * accepted.
- * In other words, if 'value = 10', the first packet is returned to the
- * caller, while the following 9 are discarded.
- */
-#define PCAP_SAMP_1_EVERY_N	1
-
-/*
- * Specifies that we have to return 1 packet every N milliseconds.
- *
- * In this case, the 'value' field of the 'pcap_samp' structure indicates
- * the 'waiting time' in milliseconds before one packet got accepted.
- * In other words, if 'value = 10', the first packet is returned to the
- * caller; the next returned one will be the first packet that arrives
- * when 10ms have elapsed.
- */
-#define PCAP_SAMP_FIRST_AFTER_N_MS 2
-
-/*
- * This structure defines the information related to sampling.
- *
- * In case the sampling is requested, the capturing device should read
- * only a subset of the packets coming from the source. The returned packets
- * depend on the sampling parameters.
- *
- * WARNING: The sampling process is applied *after* the filtering process.
- * In other words, packets are filtered first, then the sampling process
- * selects a subset of the 'filtered' packets and it returns them to the
- * caller.
- */
-struct pcap_samp
-{
-	/*
-	 * Method used for sampling; see above.
-	 */
-	int method;
-
-	/*
-	 * This value depends on the sampling method defined.
-	 * For its meaning, see above.
-	 */
-	int value;
-};
-
-/*
- * New functions.
-
-FIXME: Not compiled yet
-extern struct pcap_samp *pcap_setsampling(pcap_t *p);
-
- */
 /*
  * RPCAP active mode.
  */
@@ -634,17 +454,12 @@ struct pcap_stat {
    */
 
   extern int	pcap_get_selectable_fd(pcap_t *);
-  extern struct timeval *pcap_get_required_select_timeout(pcap_t *);
 
 /* FIXME: remote not supported yet
 extern int	pcap_remoteact_accept(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, char *errbuf);
 */
-"""
-
-libpcap_pcap_h_linux_cdef = """
-extern int	pcap_set_protocol_linux(pcap_t *, int);
 """
 
 libpcap_pcap_h_qnx_netbsd_cdef = """

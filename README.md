@@ -4,16 +4,16 @@ Python Bindings for `Wireshark` and `libpcap`
 - You can write applications like `tshark` in Python
 - Makes wireshark's dissectors available in Python and makes `libpcap`
   easily available in Python for packet capture
-- Very very early still
+- This is in active development, but should work on common Linux distributions.
 
 # Getting Started
 
 This packages right now is tested only on Linux (specifically Ubuntu 16.04)
-that based laptop that I have. To be able to get started, following
-development environment is required -
+To be able to get started, following development environment is required -
 
 1. `gcc` and it's toolset
 2. Python 3.5 or higher and Python development environment.
+3. Supports PyPy 7.3 or higher (compatible with Python 3.6)
 
 It is highly recommended to start with a virtual environment, something like
 `virtualenv venv`
@@ -22,20 +22,17 @@ Typically simply doing a `python setup.py install` should be enough to get
 you started. If everything goes well, one will have the modules installed
 in the `site-packages`.
 
-Once the packages are installed, you can run `python examples/tshark.py <pcap-filename>`
+Once the packages are installed, you can run the example code -
 
 Alternatively, if you just want to use wrapped APIs, they are used in -
-1. `examples/tcpdump.py` (For live capturing the packets and dumping `json`)
-1. `examples/tshark.py` (For dumping packets from a `pcap`ish file as `json`)
-2. `examples/tshark2.py` (For wireshark 2.6)
-3. `examples/tshark3.py` (For wireshark 3.2)
+1. `examples/tcpdump.py <interface_name>` (For live capturing the packets and dumping `json`, **NOTE:** Requires `sudo` permissions.)
+2. `examples/tshark.py <pcap-file-path>` (For dumping packets from a `pcap`ish file as `json`)
 
 # Wireshark support
 
 Right now both Wireshark 2.6.x and wireshark 3.2.x are supported.
 
-The best way to make sure this works is through `pkg-config`. If both versions
-of the library are present, we'll try to install both bindings. Right now,
+The best way to make sure this works is through `pkg-config`. Right now,
 default support is for `wireshark` 2.6 that ships with Ubuntu.
 If you have both the versions installed, it's a little bit tricky. If building
 `wireshark` from source, If you perform a `make install` (or `sudo make install`),
@@ -43,7 +40,7 @@ the right `wireshark.pc` file is created and will be used during build.
 
 # PCAP support
 
-PCAP library > 1.7 is supported. The code is tested with version 1.9.1 of the library (tag from the git). Support for BPF filters in `libpcap` is not yet present. Also, there is a `pcapy` module, that can be used as a drop in replacement for [pcapy](https://github.com/helpsystems/pcapy). We support similar APIs as `pcapy` except `bpf` support.
+PCAP library > 1.7 is supported. Also, there is a `pcapy` module, that can be used as a drop in replacement for [pcapy](https://github.com/helpsystems/pcapy). Similar APIs as `pcapy` are supported. We have performed quick testing with following versions of `libpcap` on Ubuntu (based on git tag) - `libpcap-1.7.4`, `libpcap-1.8.1`, libpcap-1.9.1`.
 
 # Directory structure
 
@@ -74,8 +71,6 @@ The `src` directory above is essentially, a source code for generating the
 the sources and `bdist`/`install` to only populate the `lib` directory. For
 now everything is packaged together.
 
-Right now we have only 'wrapped extensions' available.
 We have started with some very 'basic' Dissector API. See `examples/tshark.py` to see how it can be used.
 This API is very early (in fact this is not really an API, but just a hint about what API might look like.)
-and definitely is going to change.
-
+and very likely to change going forward.
