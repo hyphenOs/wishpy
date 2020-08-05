@@ -10,7 +10,7 @@ from .dlt_h import libpcap_dlt_h_cdef
 from .pcap_h import (
         libpcap_pcap_h_all_cdef,
         libpcap_pcap_h_nowin_cdef,
-        libpcap_pcap_h_linux_cdef)
+        )
 
 libpcap_ffi = FFI()
 
@@ -20,8 +20,6 @@ libpcap_ffi.cdef(libpcap_dlt_h_cdef)
 
 libpcap_ffi.cdef(libpcap_pcap_h_all_cdef)
 libpcap_ffi.cdef(libpcap_pcap_h_nowin_cdef)
-libpcap_ffi.cdef(libpcap_pcap_h_linux_cdef)
-
 
 _pkg_name = 'wishpy.libpcap.lib.libpcap_ext'
 _pkgconfig_libs = ['libpcap']
