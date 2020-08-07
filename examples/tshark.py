@@ -25,6 +25,7 @@ if __name__ == '__main__':
 
     setup_process()
 
+    WishpyDissectorFile.pretty_print(enabled=True)
     dissector = WishpyDissectorFile(input_filepath)
 
     then = dt.now()
