@@ -13,38 +13,41 @@ from wishpy.wireshark.lib.dissector import (
         setup_process,
         cleanup_process)
 
-then = dt.now()
+if __name__ == '__main__':
 
-packet_queue = Queue()
-c = LibpcapCapturer('wlp2s0', packet_queue)
-c.open()
+    if len(sys.argv) != 2:
+        print("Usage: tcpdump.py <interface>")
+        sys.exit(1)
 
-capture_thread = threading.Thread(target=c.start, args=(MAX_COUNT,))
-capture_thread.start()
+    interface_name = sys.argv[1]
+
+    packet_queue = Queue()
+    c = LibpcapCapturer(interface_name, packet_queue)
+    c.open()
+
+    capture_thread = threading.Thread(target=c.start, args=(MAX_COUNT,))
+    capture_thread.start()
 
 
-setup_process()
+    setup_process()
 
-dissector = WishpyDissectorQueuePython(packet_queue)
+    dissector = WishpyDissectorQueuePython(packet_queue)
 
 
-try:
+    try:
 
-    for _, _, dissected in dissector.run(count=0):
-        print(dissected)
+        for _, _, dissected in dissector.run(count=0):
+            print(dissected)
 
-except KeyboardInterrupt:
-    print("User interrupted.")
+    except KeyboardInterrupt:
+        print("User interrupted.")
 
-except Exception as e:
-    print(e)
+    except Exception as e:
+        print(e)
 
-finally:
-    cleanup_process()
+    finally:
+        cleanup_process()
 
-c.stop()
-now = dt.now()
+    c.stop()
+    capture_thread.join()
 
-capture_thread.join()
-
-#print(now - then)
