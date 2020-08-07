@@ -1,5 +1,18 @@
-"""
-Our Dissector API.
+"""APIs for wireshark's dissectors.
+
+This module provides consistent APIs for using wireshark's dissector in
+different scenarios. viz. using with live packet capture and using with
+a PCAP file. A couple of dissector classes are provided that can be directly used.
+
+WishpyDissectorQueuePython : Can be used with `wishpy.libpcap.lib.capturer.Capturer`
+WishpyDissectorFile: Can be used for printing json data from a pcap(ish) file.
+
+Example:
+
+>>> d = WishpyDissectorFile('file.pcap')
+>>> for packet in d.run():
+    print(packet)
+
 """
 import socket
 import struct
@@ -13,20 +26,29 @@ from ._wrapper import *
 
 
 class WishpyErrorInitDissector(Exception):
+    """Error raised during initialization of dissector and or dissector session.
+    """
     pass
 
 class WishpyEpanLibUninitializedError(Exception):
+    """Error raised during initialization of EPAN library.
+    """
     pass
 
 class WishpyEpanLibAlreadyInitialized(Exception):
+    """Error raised trying to initialize already initialized EPAN Library.
+    """
     pass
 
 class WishpyErrorWthOpen(Exception):
+    """Error raised during opening a Pcap file.
+    """
     pass
 
 _logger = logging.getLogger(__name__)
 
 _EPAN_LIB_INITIALIZED = False
+
 
 class WishpyDissectorBase:
     """ A Class that wraps the underlying dissector from epan module of
@@ -640,8 +662,10 @@ class WishpyDissectorBase:
 
         This is particularly convenient while performing live capture on
         an interface or dissecting a huge file.
+
         """
         raise NotImplemented("Derived Classes need to implement this.")
+
 
 class WishpyDissectorFile(WishpyDissectorBase):
     """Dissector class for PCAP Files.
@@ -656,6 +680,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
         Actual function that performs the Dissection. Right now since we are
         only supporting dissecting packets from Wiretap supported files,
         only dissects packets from a pcap(ish) file.
+
         """
 
         if not _EPAN_LIB_INITIALIZED:
@@ -686,6 +711,7 @@ class WishpyDissectorFile(WishpyDissectorBase):
 
         return
 
+
 class WishpyDissectorQueue(WishpyDissectorBase):
     """Dissector class for packets received from a Queue(ish) object.
     """
@@ -696,6 +722,7 @@ class WishpyDissectorQueue(WishpyDissectorBase):
         This should typically call `fetch` and the perform dissection. All
         the queue based `dissectors` will dissect one packet at a time, so
         it's better that this function is in the base class.
+
         """
         hdr, data = self.fetch()
         d = epan_perform_one_packet_dissection(self, self._packets_fetched,
@@ -708,11 +735,15 @@ class WishpyDissectorQueue(WishpyDissectorBase):
 
         Implementation of this function should return the object of the type
         `Hdr` and `PacketData`
+
         """
         raise NotImplemented("Derived Classes Need to implement this.")
 
 
+
 class WishpyDissectorQueuePython(WishpyDissectorQueue):
+    """Dissector class for Python Standard Library Queue.
+    """
 
     def __init__(self, queue):
 
@@ -742,6 +773,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
         """yield's the packet, up to maximum of `count` packets.
 
         if count is <= 0, infinite iterator.
+
         """
 
         self.__running = True
