@@ -423,10 +423,14 @@ def wtap_open_file_offline(filepath):
     err_str = epan_ffi.new("gchar *[256]")
     filename = filepath
     open_type = epan_lib.WTAP_TYPE_AUTO
-    wth = epan_lib.wtap_open_offline(filename.encode(), open_type, err, err_str, False)
-    if wth is epan_ffi.NULL:
-        err_display_str = epan_ffi.string(err_str)
-        _logger.error("Error creating wiretap handle: %s", err_display_str)
+    c_filename = epan_ffi.new('const char []', filename.encode())
+    wth = epan_lib.wtap_open_offline(c_filename, open_type, err, err_str, False)
+    if wth == epan_ffi.NULL:
+        if err_str[0] != epan_ffi.NULL:
+            err_display_str = epan_ffi.string(err_str[0]).decode()
+        else:
+            err_display_str = "Unknown Error"
+        _logger.error("Error creating wiretap handle: %s (%d)", err_display_str, err[0])
         return None, None
 
     wtap_file_type = epan_lib.wtap_file_type_subtype(wth)

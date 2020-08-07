@@ -694,19 +694,26 @@ class WishpyDissectorFile(WishpyDissectorBase):
         # to the Exception handler
 
         # FIXME: Do this as a context manager
-        wth, wth_filetype = wtap_open_file_offline(self.__filename)
-        if wth is None:
-            raise WishpyErrorWthOpen()
-
         try:
+            wth, wth_filetype = wtap_open_file_offline(self.__filename)
+            if wth is None:
+                raise WishpyErrorWthOpen("Error Opening wiretap file: %s" % self.__filename)
+
             yield from epan_perform_dissection(self, wth, wth_filetype,
                     self.packet_to_json, count, skip)
+
+        except WishpyErrorWthOpen as e:
+            _logger.exception("WishpyDissectorFile.run:WishpyErrorWithOpen")
+            raise
+
         except Exception as e:
             _logger.exception("WishpyDissectorFile.run")
-            pass
+
         finally:
             # If we don't close `wtap` here, outer `cleanup_process` croaks
-            wtap_close(wth)
+            if wth is not None:
+                wtap_close(wth)
+
             self.cleanup_epan_dissector()
 
         return

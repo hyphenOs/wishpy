@@ -34,7 +34,8 @@ if __name__ == '__main__':
             print(dissected)
 
     except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        sys.exit(1)
+    finally:
         cleanup_process()
-
-    now = dt.now()
-
