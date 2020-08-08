@@ -843,6 +843,3 @@ def cleanup_process():
     global _EPAN_LIB_INITIALIZED
     _EPAN_LIB_INITIALIZED = False
 
-
-__all__ = ['WishpyDissectorFile', 'WishpyDissectorQueue',
-        'WishpyDissectorQueuePython']

@@ -177,6 +177,7 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
 
     cum_bytes = epan_ffi.new('guint32 *')
     processed = 1
+    skipped = 0
     total_bytes = 0
     while True:
 
@@ -217,6 +218,10 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
             epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type,
                     rec, tvb_ptr, curr_frame_data, epan_ffi.NULL)
 
+            if skipped < skip:
+                skipped += 1
+                continue
+
             dissected = cb_func(epan_dissect_obj)
 
             # Get into last data - useful for relative analysis
@@ -231,7 +236,7 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
 
             yield dissected
 
-            if processed == count:
+            if processed == count + 1:
                 break
 
         else:
@@ -400,7 +405,7 @@ def _epan_perform_dissection_v3(wishpy_dissector, wth, wth_file_type, cb_func, c
 
             yield dissected
 
-            if processed == count:
+            if processed == count + 1:
                 break
 
         else:
@@ -413,6 +418,10 @@ def wtap_open_file_offline(filepath):
     Opens a file given by filepath  using `wtap_open_offline` and returns a tuple containing
     Handle and file type.
     """
+
+    if filepath is None:
+        _logger.error("File Path None.")
+        return None, None
 
     if not os.path.exists(filepath):
         _logger.error("File not found: %s", filepath)
