@@ -53,7 +53,7 @@ class WishpyCapturer:
         """
         pass
 
-class LibpcapCapturer(WishpyCapturer):
+class LibpcapCapturerIface(WishpyCapturer):
     """'libpcap' based packet capturer for an interface on the system.
 
         This capturer captures packet from the OS interface and posts them,
@@ -134,7 +134,7 @@ class LibpcapCapturer(WishpyCapturer):
                 On Error Condition, `WishpyCapturerCaptureError`.
         """
 
-        _logger.debug("LibpcapCapturer.start")
+        _logger.debug("LibpcapCapturerIface.start")
 
         def capture_callback(user, hdr, data):
             self.__queue.put((hdr, data,))
@@ -152,7 +152,7 @@ class LibpcapCapturer(WishpyCapturer):
         Simply calls internal libpcap's `pcap_breakloop`
         """
 
-        _logger.debug("LibpcapCapturer.stop")
+        _logger.debug("LibpcapCapturerIface.stop")
         pcap_lib.pcap_breakloop(self.__pcap_handle)
 
     def open(self):
@@ -163,11 +163,11 @@ class LibpcapCapturer(WishpyCapturer):
             finally activates the handle.
         """
 
-        _logger.debug("LibpcapCapturer.open")
+        _logger.debug("LibpcapCapturerIface.open")
 
         err_buff = pcap_ffi.new('char [256]')
         handle = pcap_lib.pcap_create(self.__iface.encode(), err_buff)
-        if handle is None:
+        if handle == epan_ffi.NULL:
             err_str = pcap_ffi.string(err_buff)
             raise WishpyCapturerOpenError(err_str)
 
@@ -210,16 +210,16 @@ class LibpcapCapturer(WishpyCapturer):
         self.__pcap_activated = False
         self.__pcap_handle = None
 
-        _logger.debug("LibpcapCapturer.close")
+        _logger.debug("LibpcapCapturerIface.close")
 
     def __repr__(self):
-        return "LibpcapCapturer iface:{}, snaplen:{}, promisc:{}, timeout:{}".\
+        return "LibpcapCapturerIface iface:{}, snaplen:{}, promisc:{}, timeout:{}".\
                 format(self.__iface, self.__snaplen,
                         self.__promisc, self.__timeout)
 
 if __name__ == '__main__':
     from queue import Queue
-    c = LibpcapCapturer('wlp2s0', Queue())
+    c = LibpcapCapturerIface('wlp2s0', Queue())
     print(c)
     c.open()
     c.start(count=1)

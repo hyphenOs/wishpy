@@ -7,7 +7,7 @@ import threading
 
 MAX_COUNT = -1
 
-from wishpy.libpcap.lib.capturer import LibpcapCapturer
+from wishpy.libpcap.lib.capturer import LibpcapCapturerIface
 from wishpy.wireshark.lib.dissector import (
         WishpyDissectorQueuePython,
         setup_process,
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     interface_name = sys.argv[1]
 
     packet_queue = Queue()
-    c = LibpcapCapturer(interface_name, packet_queue)
+    c = LibpcapCapturerIface(interface_name, packet_queue)
     c.open()
 
     capture_thread = threading.Thread(target=c.start, args=(MAX_COUNT,))
