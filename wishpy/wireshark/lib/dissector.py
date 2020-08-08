@@ -23,7 +23,7 @@ import unicodedata
 import logging
 
 from ._wrapper import *
-
+from ...libpcap.lib.capturer import PCAPHeader, pcap_ffi
 
 class WishpyErrorInitDissector(Exception):
     """Error raised during initialization of dissector and or dissector session.
@@ -732,6 +732,24 @@ class WishpyDissectorQueue(WishpyDissectorBase):
 
         """
         hdr, data = self.fetch()
+
+        # FIXME: This might slowdown things but for now fine.
+        if isinstance(hdr, PCAPHeader):
+            newhdr = pcap_ffi.new('struct pcap_pkthdr *')
+            newhdr[0].ts.tv_sec = hdr.ts_sec
+            newhdr[0].ts.tv_usec = hdr.ts_usec
+            newhdr[0].caplen = hdr.caplen
+            newhdr[0].len = hdr.len
+
+            hdr = newhdr
+
+            if isinstance(data, bytes):
+                alloc_str = 'char [%d]' % hdr.caplen
+                newdata = epan_ffi.new(alloc_str)
+                epan_ffi.memmove(newdata, data, hdr.caplen)
+
+                data = newdata
+
         d = epan_perform_one_packet_dissection(self, self._packets_fetched,
                 hdr, data, self.packet_to_json)
 

@@ -4,6 +4,9 @@ Capture API using the libpcap.
 """
 import logging
 
+from collections import namedtuple
+
+PCAPHeader = namedtuple('PCAPHeader', ['ts_sec', 'ts_usec', 'len', 'caplen'])
 
 from .libpcap_ext import lib as pcap_lib
 from .libpcap_ext import ffi as pcap_ffi
@@ -116,7 +119,7 @@ class LibpcapCapturerIface(WishpyCapturer):
     def timeout(self):
         return self.__timeout
 
-    def start(self, count=-1):
+    def start(self, count=-1, serialize=False):
         """ Starts capturing of the packets on our Interface.
 
             Note: This is a blocking function and an application should
@@ -125,7 +128,9 @@ class LibpcapCapturerIface(WishpyCapturer):
 
             Args:
                 count: (optional) if specified should be a positive integer
-                specifying maximum number of packets to be captured.
+                    specifying maximum number of packets to be captured.
+                serialize: bool, optional - if specified serializes the header
+                    and data to `PCAPHeader` and `bytes` objects
 
             Returns:
                 On Success Nothing
@@ -137,7 +142,18 @@ class LibpcapCapturerIface(WishpyCapturer):
         _logger.debug("LibpcapCapturerIface.start")
 
         def capture_callback(user, hdr, data):
-            self.__queue.put((hdr, data,))
+
+            if serialize:
+                ## Convert this into - sensible Header, Data 'pickle'able
+                hdr = hdr[0]
+                caplen = hdr.caplen
+                ser_header = PCAPHeader(
+                        *(hdr.ts.tv_sec, hdr.ts.tv_usec,
+                            caplen, hdr.len))
+                ser_data = bytes(pcap_ffi.unpack(data, caplen))
+                self.__queue.put((ser_header, ser_data))
+            else:
+                self.__queue.put((hdr, data,))
 
         _cb = pcap_ffi.callback(
                 'void (*)(u_char *, const struct pcap_pkthdr *, const u_char *)',
@@ -167,7 +183,7 @@ class LibpcapCapturerIface(WishpyCapturer):
 
         err_buff = pcap_ffi.new('char [256]')
         handle = pcap_lib.pcap_create(self.__iface.encode(), err_buff)
-        if handle == epan_ffi.NULL:
+        if handle == pcap_ffi.NULL:
             err_str = pcap_ffi.string(err_buff)
             raise WishpyCapturerOpenError(err_str)
 
