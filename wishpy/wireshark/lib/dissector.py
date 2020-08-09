@@ -733,6 +733,10 @@ class WishpyDissectorQueue(WishpyDissectorBase):
         """
         hdr, data = self.fetch()
 
+        if hdr == 'stop':
+            self._stop_requested = True
+            return hdr, data, None
+
         # FIXME: This might slowdown things but for now fine.
         if isinstance(hdr, PCAPHeader):
             newhdr = pcap_ffi.new('struct pcap_pkthdr *')
@@ -776,7 +780,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
         self.__queue = queue
         self.__running = False
-        self.__stop_requested = False
+        self._stop_requested = False
         self._packets_fetched = 0
 
     def fetch(self):
@@ -816,7 +820,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
             x = yield (hdr, data, d)
 
-            if self.__stop_requested == True:
+            if self._stop_requested == True:
                 break
 
             if x and x.lower() == 'stop':
@@ -831,7 +835,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
     def stop(self):
         """Stop's the generator by setting internal state."""
-        self.__stop_requested = True
+        self._stop_requested = True
 
 
 def setup_process():
