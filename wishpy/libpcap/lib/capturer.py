@@ -56,7 +56,85 @@ class WishpyCapturer:
         """
         pass
 
-class LibpcapCapturerIface(WishpyCapturer):
+class WishpyCapturerQueue(WishpyCapturer):
+    """Base Class for Sending Packets to Python Queue like objects.
+
+    """
+
+    def __init__(self, queue, **kw):
+        """Constructor
+
+        Args:
+            queue:  Python Queue like objects that supported Get/Put APIs
+                    in a thread/process safe manner. (eg. Queue,
+                    multiprocessing Queue etc.)
+            *kw: Possible keyword arguments.
+        """
+        self._queue = queue
+        self._pcap_handle = None
+
+    @property
+    def queue(self):
+        return self._queue
+
+    def start(self, count=-1, serialize=True):
+        """ Starts capturing of the packets.
+
+        Note: This is a blocking function and an application should call this
+            function from a separate thread of execution.  Calls internal
+            `pcap_loop` function of libpcap.
+
+        Args:
+            count: (optional) if specified should be a positive integer
+                    specifying maximum number of packets to be captured.
+                    serialize: bool, optional - if specified serializes the header
+                    and data to `PCAPHeader` and `bytes` objects (default=True)
+
+        Returns:
+            On Success Nothing
+
+        Raises:
+            On Error Condition, `WishpyCapturerCaptureError`.
+
+        """
+
+        _logger.debug("%s.start", self.__class__.__name__)
+
+        def capture_callback(user, hdr, data):
+
+            if serialize:
+                ## Convert this into - sensible Header, Data 'pickle'able
+                hdr = hdr[0]
+                caplen = hdr.caplen
+                ser_header = PCAPHeader(
+                        *(hdr.ts.tv_sec, hdr.ts.tv_usec,
+                            caplen, hdr.len))
+                ser_data = bytes(pcap_ffi.unpack(data, caplen))
+                self._queue.put((ser_header, ser_data))
+            else:
+                self._queue.put((hdr, data,))
+
+        #FIXME : I don't know how to do it without a 'closure'
+        _cb = pcap_ffi.callback(
+                'void (*)(u_char *, const struct pcap_pkthdr *, const u_char *)',
+                capture_callback)
+
+        result = pcap_lib.pcap_loop(self._pcap_handle, count,
+                _cb, pcap_ffi.NULL)
+
+        self._queue.put(('stop', result))
+
+    def stop(self):
+        """ Stops the capture.
+
+        Simply calls internal libpcap's `pcap_breakloop`
+        """
+
+        _logger.debug("%s.stop", self.__class__.__name__)
+        pcap_lib.pcap_breakloop(self._pcap_handle)
+
+
+class WishpyCapturerIfaceToQueue(WishpyCapturerQueue):
     """'libpcap' based packet capturer for an interface on the system.
 
         This capturer captures packet from the OS interface and posts them,
@@ -64,15 +142,15 @@ class LibpcapCapturerIface(WishpyCapturer):
         posted on the queue. Assume they are tuples like - (header, data)
     """
 
-    def __init__(self, iface, queue,
-            snaplen=0, promisc=True, timeout=10, **kw):
+    def __init__(self, iface, queue, snaplen=0,
+            promisc=True, timeout=10, **kw):
         """Constructor
 
             Args:
-                iface:   string - An Interface Name on the local OS.
                 queue:   Python Queue like objects that supported Get/Put APIs
                          in a thread/process safe manner. (eg. Queue,
                          multiprocessing Queue etc.)
+                iface:   string - An Interface Name on the local OS.
                 snaplen: integer (optional), should be non-zero, if provided,
                          maximum capture data for packet will be capped to this
                          value. Default - Don't set Capture length (ie. if
@@ -89,12 +167,12 @@ class LibpcapCapturerIface(WishpyCapturer):
                          include 'maximum number of packets to capture etc.
         """
 
+        super().__init__(queue, **kw)
+
         self.__iface = iface
-        self.__queue = queue
         self.__snaplen = snaplen
         self.__promisc = promisc
         self.__timeout = timeout
-        self.__pcap_handle = None
         self.__pcap_activated = False
 
     # Property Classes: All are read-only there is little value in making
@@ -102,10 +180,6 @@ class LibpcapCapturerIface(WishpyCapturer):
     @property
     def iface(self):
         return self.__iface
-
-    @property
-    def queue(self):
-        return self.__queue
 
     @property
     def snaplen(self):
@@ -119,58 +193,6 @@ class LibpcapCapturerIface(WishpyCapturer):
     def timeout(self):
         return self.__timeout
 
-    def start(self, count=-1, serialize=False):
-        """ Starts capturing of the packets on our Interface.
-
-            Note: This is a blocking function and an application should
-            call this function from a separate thread of execution.
-            Calls internal `pcap_loop` function of libpcap.
-
-            Args:
-                count: (optional) if specified should be a positive integer
-                    specifying maximum number of packets to be captured.
-                serialize: bool, optional - if specified serializes the header
-                    and data to `PCAPHeader` and `bytes` objects
-
-            Returns:
-                On Success Nothing
-
-            Raises:
-                On Error Condition, `WishpyCapturerCaptureError`.
-        """
-
-        _logger.debug("LibpcapCapturerIface.start")
-
-        def capture_callback(user, hdr, data):
-
-            if serialize:
-                ## Convert this into - sensible Header, Data 'pickle'able
-                hdr = hdr[0]
-                caplen = hdr.caplen
-                ser_header = PCAPHeader(
-                        *(hdr.ts.tv_sec, hdr.ts.tv_usec,
-                            caplen, hdr.len))
-                ser_data = bytes(pcap_ffi.unpack(data, caplen))
-                self.__queue.put((ser_header, ser_data))
-            else:
-                self.__queue.put((hdr, data,))
-
-        _cb = pcap_ffi.callback(
-                'void (*)(u_char *, const struct pcap_pkthdr *, const u_char *)',
-                capture_callback)
-
-        result = pcap_lib.pcap_loop(self.__pcap_handle, count,
-                _cb, pcap_ffi.NULL)
-
-    def stop(self):
-        """ Stops the capture.
-
-        Simply calls internal libpcap's `pcap_breakloop`
-        """
-
-        _logger.debug("LibpcapCapturerIface.stop")
-        pcap_lib.pcap_breakloop(self.__pcap_handle)
-
     def open(self):
         """ Open's the Capturerer readying it for performing capture.
 
@@ -179,7 +201,7 @@ class LibpcapCapturerIface(WishpyCapturer):
             finally activates the handle.
         """
 
-        _logger.debug("LibpcapCapturerIface.open")
+        _logger.debug("%s.open", self.__class__.__name__)
 
         err_buff = pcap_ffi.new('char [256]')
         handle = pcap_lib.pcap_create(self.__iface.encode(), err_buff)
@@ -213,7 +235,7 @@ class LibpcapCapturerIface(WishpyCapturer):
 
         # FIXME: Warning to be reported
         self.__pcap_activated = True
-        self.__pcap_handle = handle
+        self._pcap_handle = handle
 
     def close(self):
         """ Closes internal `libpcap` handle
@@ -221,17 +243,76 @@ class LibpcapCapturerIface(WishpyCapturer):
             libpcap's `pcap_close` function is called and our activated flag
             is set to False.
         """
-        if self.__pcap_handle is not None:
-            pcap_lib.pcap_close(self.__pcap_handle)
+        if self._pcap_handle is not None:
+            pcap_lib.pcap_close(self._pcap_handle)
+        self._pcap_handle = None
         self.__pcap_activated = False
-        self.__pcap_handle = None
 
-        _logger.debug("LibpcapCapturerIface.close")
+        _logger.debug("%s.close", self.__class__.__name__)
 
     def __repr__(self):
-        return "LibpcapCapturerIface iface:{}, snaplen:{}, promisc:{}, timeout:{}".\
-                format(self.__iface, self.__snaplen,
+        return "{} iface:{}, snaplen:{}, promisc:{}, timeout:{}".\
+                format(self.__class__.__name__,
+                        self.__iface, self.__snaplen,
                         self.__promisc, self.__timeout)
+
+
+class WishpyCapturerFileToQueue(WishpyCapturerQueue):
+    """A Libpcap capturer class that wraps a PCAP file.
+
+    This class provides the `Capturer` API wrapping a PCAP file. Note: For the
+    dissection part it is better to directly use
+    :class:`wishpy.wireshark.lib.dissector.WishpyDissectorFile`. This class
+    should be used when you want to take packets from a PCAP file and do
+    something other than 'dissect'ing them.
+    """
+
+    def __init__(self, filename, queue, **kw):
+        """Constructor
+
+        Args:
+            filename: PCAP file to be opened for reading.
+            queue:  Queue to send packets to.
+        """
+
+        super().__init__(queue, **kw)
+
+        self.__filename = filename
+
+    @property
+    def filename(self):
+        return self.__filename
+
+    def open(self):
+        """Opens the filename for PCAP Capture.
+
+        Returns: None
+        Raises:
+            WishpyCapturerOpenError: If failure to open a file.
+        """
+        err_buff = pcap_ffi.new('char [256]')
+        handle = pcap_lib.pcap_open_offline(self.filename.encode(), err_buff)
+        if handle == pcap_ffi.NULL:
+            err_str = pcap_ffi.string(err_buff)
+            raise WishpyCapturerOpenError(err_str)
+
+        self._pcap_handle = handle
+
+    def close(self):
+        """ Closes internal `libpcap` handle
+
+            libpcap's `pcap_close` function is called and our activated flag
+            is set to False.
+        """
+        if self._pcap_handle is not None:
+            pcap_lib.pcap_close(self._pcap_handle)
+        self._pcap_handle = None
+
+        _logger.debug("%s.close", self.__class__.__name__)
+
+    def __repr__(self):
+        return "{} filename:{}".format(self.__class__.__name__, self.__filename)
+
 
 if __name__ == '__main__':
     from queue import Queue
