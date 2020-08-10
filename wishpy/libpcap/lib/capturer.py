@@ -2,16 +2,23 @@
 Capture API using the libpcap.
 
 """
+import os
 import logging
 
 from collections import namedtuple
 
-PCAPHeader = namedtuple('PCAPHeader', ['ts_sec', 'ts_usec', 'len', 'caplen'])
-
-from .libpcap_ext import lib as pcap_lib
-from .libpcap_ext import ffi as pcap_ffi
-
 _logger = logging.getLogger(__name__)
+
+try:
+    from .libpcap_ext import lib as pcap_lib
+    from .libpcap_ext import ffi as pcap_ffi
+except ImportError:
+    if os.getenv('READTHEDOCS', None) is not None:
+        _logger.warning("Ignoring. Import Error in RTD.")
+    else:
+        raise
+
+PCAPHeader = namedtuple('PCAPHeader', ['ts_sec', 'ts_usec', 'len', 'caplen'])
 
 class WishpyCapturerOpenError(Exception):
     pass
@@ -287,8 +294,7 @@ class WishpyCapturerFileToQueue(WishpyCapturerQueue):
         """Opens the filename for PCAP Capture.
 
         Returns: None
-        Raises:
-            WishpyCapturerOpenError: If failure to open a file.
+        Raises: WishpyCapturerOpenError: If failure to open a file.
         """
         err_buff = pcap_ffi.new('char [256]')
         handle = pcap_lib.pcap_open_offline(self.filename.encode(), err_buff)

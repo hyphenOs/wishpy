@@ -10,7 +10,6 @@ Wireshark Dissector APIs
 .. automodule:: wishpy.wireshark.lib.dissector
   :members:
 
-
 ++++++++++++++++++++++++++
 ``libpcap`` Capturer APIs
 ++++++++++++++++++++++++++

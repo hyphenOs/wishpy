@@ -1,6 +1,7 @@
 Python Bindings for `Wireshark` and `libpcap`
 
 [![Build Status](https://travis-ci.com/hyphenOs/wishpy.svg?branch=master)](https://travis-ci.com/hyphenOs/wishpy)
+[![Documentation Status](https://readthedocs.org/projects/wishpy/badge/?version=latest)](https://wishpy.readthedocs.io/en/latest/?badge=latest)
 
 - Uses `cffi` to generate Python bindings for `wireshark` and `libpcap`
 - You can write applications like `tshark` in Python

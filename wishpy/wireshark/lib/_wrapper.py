@@ -12,6 +12,9 @@ import binascii
 import warnings
 import logging
 
+class EpanLoadError(Exception):
+    pass
+
 try:
     from .epan2_ext import lib as epan_lib
     from .epan2_ext import ffi as epan_ffi
@@ -21,14 +24,22 @@ except ImportError:
         from .epan3_ext import lib as epan_lib
         from .epan3_ext import ffi as epan_ffi
         _epan_version = (3, 2)
+
     except ImportError:
-        warnings.warn("Epan Library Extensions Not Found.")
-        raise EpanLoadError
+
+        if os.getenv('RTD_AUTODOC_FAKE_EXT', None) is not None or \
+                os.getenv('READTHEDOCS', None) is not None:
+
+            warnings.warn("Epan Library Extensions Not Found. Loading fake_ext. This should only be useful when building docs on RTD.")
+
+            from .fake_ext import lib as epan_lib
+            from .fake_ext import ffi as epan_ffi
+
+            _epan_version = (2, 6)
+        else:
+            raise EpanLoadError
 
 _logger = logging.getLogger(__name__)
-
-class EpanLoadError(Exception):
-    pass
 
 _nstime_empty = epan_ffi.new('nstime_t *');
 @epan_ffi.callback('const nstime_t *(*)(struct packet_provider_data *prov, guint32 frame_num)')

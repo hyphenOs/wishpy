@@ -14,6 +14,7 @@ Example:
     print(packet)
 
 """
+import os
 import socket
 import struct
 import json
@@ -22,8 +23,16 @@ from datetime import datetime as dt
 import unicodedata
 import logging
 
+_logger = logging.getLogger(__name__)
+
 from ._wrapper import *
-from ...libpcap.lib.capturer import PCAPHeader, pcap_ffi
+try:
+    from ...libpcap.lib.capturer import PCAPHeader, pcap_ffi
+except:
+    if os.getenv('READTHEDOCS', None) is not None:
+        _logger.warning("Import Error, but it's okay during RTD Build.")
+    else:
+        raise
 
 class WishpyErrorInitDissector(Exception):
     """Error raised during initialization of dissector and or dissector session.
@@ -44,8 +53,6 @@ class WishpyErrorWthOpen(Exception):
     """Error raised during opening a Pcap file.
     """
     pass
-
-_logger = logging.getLogger(__name__)
 
 _EPAN_LIB_INITIALIZED = False
 
@@ -429,7 +436,8 @@ class WishpyDissectorBase:
 
 
     def run(self, *args, **kw):
-        """A generator function `yield`ing at-least the dissected packets.
+        """A generator function ``yield``ing at\-least the dissected packets.
+
 
         Implementing this as a generator function helps one to run code
         that looks like
@@ -439,6 +447,9 @@ class WishpyDissectorBase:
 
         This is particularly convenient while performing live capture on
         an interface or dissecting a huge file.
+
+
+
 
         """
         raise NotImplemented("Derived Classes need to implement this.")
