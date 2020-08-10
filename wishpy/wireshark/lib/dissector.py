@@ -648,8 +648,12 @@ def cleanup_process():
     Per process cleanup. de-init of epan/wtap modules.
     """
 
-    perform_epan_wtap_cleanup()
-
     global _EPAN_LIB_INITIALIZED
+
+    if _EPAN_LIB_INITIALIZED:
+        perform_epan_wtap_cleanup()
+    else:
+        _logger.warning("cleanup_process called without init process!")
+
     _EPAN_LIB_INITIALIZED = False
 

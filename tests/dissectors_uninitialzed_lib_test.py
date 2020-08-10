@@ -26,3 +26,9 @@ class  WishpyDissectorUninitilizedProcess(unittest.TestCase):
             for i in dissector.run():
                 pass
 
+
+    def test_cleanup_on_lib_uninitialized(self):
+        """ calling cleanup_process on uninitialized process
+        """
+        cleanup_process()
+

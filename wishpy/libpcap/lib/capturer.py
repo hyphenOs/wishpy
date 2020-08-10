@@ -138,7 +138,14 @@ class WishpyCapturerQueue(WishpyCapturer):
         """
 
         _logger.debug("%s.stop", self.__class__.__name__)
-        pcap_lib.pcap_breakloop(self._pcap_handle)
+
+        if self._pcap_handle is not None:
+            _logger.info("Stopping Capturer.")
+            pcap_lib.pcap_breakloop(self._pcap_handle)
+            self._pcap_handle = None
+        else:
+            _logger.info("Capturer already stopped.")
+
 
 
 class WishpyCapturerIfaceToQueue(WishpyCapturerQueue):
