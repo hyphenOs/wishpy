@@ -146,17 +146,17 @@ class WishpyDissectorBase:
     unquoted_types = epan_all_int_types + \
             [FT_BOOLEAN, FT_RELATIVE_TIME, FT_FLOAT, FT_DOUBLE]
 
-    # Below are some dict's required for printing few packet types
+    # Keys: BAS_XXX value `quote` (Whether returned value should be quoted.)
     hfbases = {
-            BASE_NONE : ('{:d}', False), # Not sure how this is to be treated
-            BASE_DEC : ('{:d}', False),
-            BASE_HEX : ('0x{:x}', True),
-            BASE_OCT : ('{:o}', True),
-            BASE_DEC_HEX: ('{:d}(0x{:x})', True),
-            BASE_HEX_DEC: ('0x{:x}({:d})', True),
-            BASE_PT_TCP: ('{:d}', False),
-            BASE_PT_UDP: ('{:d}', False),
-            BASE_PT_SCTP: ('{:d}', False)
+            BASE_NONE : False, # Not sure how this is to be treated
+            BASE_DEC : False,
+            BASE_HEX : True,
+            BASE_OCT : True,
+            BASE_DEC_HEX: True,
+            BASE_HEX_DEC: True,
+            BASE_PT_TCP: False,
+            BASE_PT_UDP: False,
+            BASE_PT_SCTP: False
 
      }
 
@@ -179,181 +179,6 @@ class WishpyDissectorBase:
         # FIXME: May be we should replace them with their unicode code points
         category_fn = unicodedata.category
         return "".join(ch for ch in s if category_fn(ch)[0] != "C")
-
-    @classmethod
-    def func_not_supported(cls, *args):
-        return "Not Supported"
-
-    @classmethod
-    def epan_ether_to_str(cls, fvalue, ftype, display, abbrev):
-        """ Converting Ethernet addresses to String"""
-
-        eth_bytes = fvalue.value.bytes
-
-        display_bytes = []
-        for i in range(eth_bytes.len):
-            display_byte = "{:02X}".format(eth_bytes.data[i])
-            display_bytes.append(display_byte)
-
-        return ":".join(display_bytes), True
-
-    epan_bytes_to_str = epan_ether_to_str
-
-    @classmethod
-    def epan_str_to_str(cls, fvalue, ftype, display, abbrev):
-        """Converting epan 'char *' to Python String"""
-
-        value = fvalue.value.string
-
-        # If display is BASE_NONE, utf-8 is fine, but for others, not always! (GSM-Unicode)
-        if display == 0:
-            x = cls.epan_string(value).decode().\
-                    replace('\\', '\\\\').\
-                    replace('"', '\\"')
-            return cls.remove_ctrl_chars(x), True
-        else:
-            try:
-                x = cls.epan_string(value).decode("utf-8").\
-                        replace('\\', '\\\\').\
-                        replace('"', '\\"')
-                return cls.remove_ctrl_chars(x), True
-            except Exception as e:
-                _logger.exception("epan_str_to_str: (%s) %s", abbrev, x)
-                return "Cannot Decode"
-
-    @classmethod
-    def epan_ipv4_to_str(cls, fvalue, ftype, display, abbrev):
-        """Converting IP Address to Python String"""
-
-        ipv4 = fvalue.value.ipv4
-
-        return socket.inet_ntoa(struct.pack('!I', ipv4.addr)), True
-
-    @classmethod
-    def epan_bool_to_str(cls, fvalue, ftype, display, abbrev,
-            on_off=False, json_compat=True):
-        """ Converting `gboolean` to String"""
-
-        if on_off and json_compat:
-            raise ValueError("Specify Either on_off or json_compat not both.")
-
-        value = bool(fvalue.value.uinteger)
-
-        if value:
-            if json_compat:
-                return "true", False
-            if on_off:
-                return "ON", True
-        else:
-            if json_compat:
-                return "false", False
-            if on_off:
-                return "OFF", True
-
-        return "{}".format(value)
-
-    @classmethod
-    def epan_int_to_str(cls, fvalue, ftype, display, abbrev):
-        """Converting Integer to String, using BASE_* property."""
-
-        try:
-            # FIXME: We can definitely do better than these `if`s.
-            # We are ignoring all fancy display options for now
-            if display & cls.BASE_RANGE_STRING:
-                display ^= cls.BASE_RANGE_STRING
-
-            if display & cls.BASE_EXT_STRING:
-                display ^= cls.BASE_EXT_STRING
-
-            if display & cls.BASE_VAL64_STRING:
-                display ^= cls.BASE_VAL64_STRING
-
-            if display & cls.BASE_ALLOW_ZERO:
-                display ^= cls.BASE_ALLOW_ZERO
-
-            if display & cls.BASE_UNIT_STRING:
-                display ^= cls.BASE_UNIT_STRING
-
-            if display & cls.BASE_NO_DISPLAY_VALUE:
-                display ^= cls.BASE_NO_DISPLAY_VALUE
-
-            if display & cls.BASE_PROTOCOL_INFO:
-                display ^= cls.BASE_PROTOCOL_INFO
-
-            if display & cls.BASE_SPECIAL_VALS:
-                display ^= cls.BASE_SPECIAL_VALS
-
-            # Change the custom display to `Decimal` for now
-            if display == cls.BASE_CUSTOM:
-                display = cls.BASE_DEC
-
-            if display == cls.BASE_OUI:
-                display = cls.BASE_HEX
-
-            base_format, quote = cls.hfbases[display]
-
-        except:
-            _logger.exception("epan_int_to_str: (%s) %d %d", abbrev, ftype, display)
-            return "type: {} display: {} Not Supported".format(ftype, display), True
-
-        return base_format.format(fvalue.value.uinteger,
-                fvalue.value.uinteger), quote
-
-    @classmethod
-    def epan_abstime_to_str(cls, fvalue, ftype, display, abbrev):
-        timeval = fvalue.value.time
-        timeval = timeval.secs + timeval.nsecs / 1000000000
-        value = dt.strftime(dt.fromtimestamp(timeval), '%d-%b-%Y %H:%M:%S.%f %Z')
-        return value, True
-
-
-    @classmethod
-    def epan_reltime_to_str(cls, fvalue, ftype, display, abbrev):
-        value = fvalue.value.time
-        return "{:.9f}".format(value.secs + value.nsecs / 1000000000), False
-
-    @classmethod
-    def epan_none_to_str(cls, fvalue, ftype, display, abbrev):
-        return None, None
-
-    to_str_funcs = {
-            FT_ETHER : epan_ether_to_str.__func__,
-            FT_IPv4 : epan_ipv4_to_str.__func__,
-            FT_BOOLEAN : epan_bool_to_str.__func__,
-            FT_STRING : epan_str_to_str.__func__,
-            FT_BYTES : epan_bytes_to_str.__func__,
-            FT_RELATIVE_TIME : epan_reltime_to_str.__func__,
-            FT_ABSOLUTE_TIME : epan_abstime_to_str.__func__,
-            FT_NONE : epan_none_to_str.__func__,
-            FT_PROTOCOL : epan_none_to_str.__func__
-    }
-
-    all_int_to_str_funcs = [epan_int_to_str.__func__] * len(epan_all_int_types)
-    to_str_funcs.update(zip(epan_all_int_types, all_int_to_str_funcs))
-
-    @classmethod
-    def value_to_str(cls, finfo):
-        """
-        Returns string representation of the `finfo.value`
-        """
-
-        fvalue = finfo.value
-        ftype = finfo.hfinfo[0].type
-        display = finfo.hfinfo[0].display
-        abbrev = cls.epan_string(finfo.hfinfo[0].abbrev).decode()
-
-        epan_int_types = cls.epan_int_types
-        epan_uint32_types = cls.epan_uint32_types
-        epan_uint_types = cls.epan_uint_types
-        epan_all_int_types = cls.epan_all_int_types
-
-        try:
-            fn = cls.to_str_funcs[ftype]
-            return fn(cls, fvalue, ftype, display, abbrev)
-        except KeyError as e:
-            #_logger.exception("unknown type: %d", ftype)
-
-            return "{} {}".format(ftype, display), True
 
     @classmethod
     def print_dissected_tree_pretty_ftype_api(cls, node_ptr, level=1):
@@ -388,7 +213,7 @@ class WishpyDissectorBase:
                     finfo_display_str = '"' + finfo_display_str + '"'
                 else:
                     try:
-                        _, quote = cls.hfbases[display]
+                        quote = cls.hfbases[display]
                     except KeyError as e:
                         quote = True
 
@@ -434,54 +259,6 @@ class WishpyDissectorBase:
         return return_str
 
     @classmethod
-    def print_dissected_tree(cls, node_ptr):
-        """Returns a string that represents a dissected tree.
-        """
-        return_str = ""
-
-        node = node_ptr[0]
-        finfo = node.finfo
-        if finfo != cls.NULL:
-
-            hfinfo = finfo.hfinfo[0]
-            abbrev = cls.epan_string(hfinfo.abbrev).decode()
-            abbrev_str = '"' + abbrev + '"'
-            return_str += abbrev_str + ":"
-            finfo_display_str, quote = cls.value_to_str(finfo)
-            if finfo_display_str:
-                if quote:
-                    finfo_display_str = '"' + finfo_display_str + '"'
-        else:
-            finfo_display_str = ""
-
-        if finfo_display_str is not None:
-            return_str += finfo_display_str
-
-        child = node.first_child
-        if child != cls.NULL:
-
-            if finfo_display_str:
-                return_str += ","
-
-                abbrev_tree = abbrev + "_tree"
-                abbrev_tree_str = '"' + abbrev_tree + '"'
-                return_str += abbrev_tree_str + ":"
-
-            return_str += "{"
-            while child != cls.NULL:
-                return_str += cls.print_dissected_tree(child)
-                child = child.next
-
-            return_str += "}"
-        else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
-            if not finfo_display_str:
-                return_str += "\"\""
-        if node.next != cls.NULL:
-            return_str += ","
-
-        return return_str
-
-    @classmethod
     def print_dissected_tree_ftype_api(cls, node_ptr):
         """Returns a string representing dissected tree using the `ftypes` API.
         """
@@ -514,7 +291,7 @@ class WishpyDissectorBase:
                     finfo_display_str = '"' + finfo_display_str + '"'
                 else:
                     try:
-                        _, quote = cls.hfbases[display]
+                        quote = cls.hfbases[display]
                     except KeyError as e:
                         quote = True
 

@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     try:
         then = time.time()
-        for dissected in dissector.run(count=10000, skip=0):
+        for dissected in dissector.run(count=50000, skip=0):
             pass #print(dissected)
 
         now = time.time()
