@@ -1,16 +1,23 @@
+import sys
+
 from cffi import FFI
 try:
     from cffi import PkgConfigError
 except:
     pass
 
-from ...glib.glib_h import glib_h_cdef
+if sys.platform == 'win32':
+    from ...glib.glib_win_h import glib_h_cdef
+    from ...wsutil.nstime_win_h import wsutil_nstime_h_types_cdef
+else:
+    from ...glib.glib_h import glib_h_cdef
+    from ...wsutil.nstime_h import wsutil_nstime_h_types_cdef
+
 from ...glib.garray_h import garray_h_cdef
 from ...glib.glist_h import glist_h_cdef
 from ...glib.gstring_h import glib_gstring_h_types_cdef
 from ...glib.ghash_h import glib_ghash_h_types_cdef
 
-from ...wsutil.nstime_h import wsutil_nstime_h_types_cdef
 from ...wsutil.buffer_h import wsutil_buffer_h_cdef
 from ...wsutil.inet_ipv4_h import wsutil_inet_ipv4_h_cdef
 from ...wsutil.inet_ipv6_h import wsutil_inet_ipv6_h_cdef
@@ -123,17 +130,29 @@ _pkg_name = 'wishpy.wireshark.lib.epan3_ext'
 
 _pkgconfig_libs = ['wireshark']
 
-_libraries = ['glib-2.0', 'wireshark', 'wsutil']
+_libraries = ['glib-2.0', 'wireshark', 'wsutil', 'wiretap']
 
-_extra_compile_args = [
+if sys.platform == 'win32':
+    # FIXME: Remove the hardcoding below. Change following paths to match
+    # Those on your machine.
+    _extra_compile_args = [
+            "-IC:\\Program Files (x86)\\Wireshark\\include\\Wireshark",
+            "-IC:\\wireshark-dev\\wireshark-win64-libs-3.2\\vcpkg-export-20190318-win64ws\\installed\\x64-windows\\include"
+            ]
+    _extra_link_args = [
+            "/LIBPATH:C:\\wireshark-dev\\wireshark-win64-libs-3.2\\vcpkg-export-20190318-win64ws\\installed\\x64-windows\\lib",
+            "/LIBPATH:C:\\Program Files (x86)\\Wireshark"
+        ]
+else:
+    _extra_compile_args = [
         '-I/usr/local/include/wireshark',
         '-I/usr/include/wireshark',
         '-I/usr/include/glib-2.0',
         '-I/usr/lib/x86_64-linux-gnu/glib-2.0/include',
         ]
 
-_extra_link_args = [
-        '-L/usr/local/lib',
+    _extra_link_args = [
+            '-L/usr/local/lib',
         ]
 
 try:
@@ -141,6 +160,6 @@ try:
             extra_link_args=_extra_link_args)
 except PkgConfigError:
     epan_ffi.set_source(_pkg_name, _sources,
-            libraries=_libraries,
             extra_compile_args=_extra_compile_args,
+            libraries=_libraries,
             extra_link_args=_extra_link_args)

@@ -32,7 +32,8 @@ except:
     if os.getenv('READTHEDOCS', None) is not None:
         _logger.warning("Import Error, but it's okay during RTD Build.")
     else:
-        raise
+        _logger.warning("Import Error, Ignoring for now.")
+        pass #raise
 
 class WishpyErrorInitDissector(Exception):
     """Error raised during initialization of dissector and or dissector session.

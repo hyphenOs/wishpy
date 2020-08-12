@@ -16,6 +16,8 @@ def find_libwireshark_version():
         return major, minor, True
     except subprocess.CalledProcessError:
         pass
+    except FileNotFoundError:
+        pass
 
 
     if os.path.exists("wireshark-version"):
@@ -32,8 +34,8 @@ def find_libwireshark_version():
 major, minor, is_pkgconfig = find_libwireshark_version()
 
 if major is None or minor is None:
-    major = 2
-    minor = 6
+    major = 3
+    minor = 2
 
 version_str = "{}.{}".format(major, minor)
 
@@ -59,6 +61,10 @@ elif major == 3:
 
 libpcap_ffi_module = 'wishpy/libpcap/src/pcap_builder.py:libpcap_ffi'
 
+all_cffi_modules = [epan_ffi_module]
+if sys.platform != 'win32':
+    all_cffi_modules.append(libpcap_ffi_module)
+
 setup(name='wishpy',
         version='0.0.11',
         description='Python Bindings for Wireshark using cffi',
@@ -68,10 +74,7 @@ setup(name='wishpy',
         license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark', 'LICENSE-libpcap'],
         setup_requires=['cffi>=1.14.0'],
         install_requires=['cffi>=1.14.0'],
-        cffi_modules=[
-            epan_ffi_module,
-            libpcap_ffi_module
-            ],
+        cffi_modules=all_cffi_modules,
         packages=find_packages(),
         scripts=['examples/tshark3.py',
             'examples/tshark2.py',
