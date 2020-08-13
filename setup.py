@@ -24,8 +24,8 @@ def find_libwireshark_version():
         with open("wireshark-version", "r") as f:
             for line in f:
                 if line.lower().startswith("version:"):
-                    version_str = line.split(":")[1].strip()
-                    major, minor, _ = version_str.split(".")
+                    ws_version_str = line.split(":")[1].strip()
+                    major, minor, _ = ws_version_str.split(".")
                     major, minor = int(major), int(minor)
                     return major, minor, False
 
@@ -37,7 +37,7 @@ if major is None or minor is None:
     major = 3
     minor = 2
 
-version_str = "{}.{}".format(major, minor)
+ws_version_str = "{}.{}".format(major, minor)
 
 if not is_pkgconfig:
     warning_msg = "Heuristically determined version of Wireshark is {}.{} .".\
@@ -47,14 +47,14 @@ if not is_pkgconfig:
 
 if major == 2:
     if minor != 6:
-        print("Supported version is 2.6. Determined version is ", version_str)
+        print("Supported version is 2.6. Determined version is ", ws_version_str)
         sys.exit(-1)
 
     epan_ffi_module = 'wishpy/wireshark/src/wireshark2/epan/epan_builder.py:epan_ffi'
 
 elif major == 3:
     if minor != 2:
-        print("Supported version is 3.2. Determined version is ", version_str)
+        print("Supported version is 3.2. Determined version is ", ws_version_str)
         sys.exit(-1)
 
     epan_ffi_module = 'wishpy/wireshark/src/wireshark3/epan/epan_builder.py:epan_ffi'
@@ -69,6 +69,7 @@ setup(name='wishpy',
         version='0.0.11',
         description='Python Bindings for Wireshark using cffi',
         long_description=open('README.md').read(),
+        long_description_content_type="text/markdown",
         author='hyphenOs Software Labs',
         author_email='gabhijit@hyphenos.io',
         license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark', 'LICENSE-libpcap'],
