@@ -19,6 +19,9 @@ def find_libwireshark_version():
     except FileNotFoundError:
         pass
 
+    if sys.platform.startswith('win'):
+        # On windows the version is always 3.2 (One we are building)
+        return 3, 2, False
 
     if os.path.exists("wireshark-version"):
         with open("wireshark-version", "r") as f:
