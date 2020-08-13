@@ -2,6 +2,7 @@ Python Bindings for `Wireshark` and `libpcap`
 
 [![Build Status](https://travis-ci.com/hyphenOs/wishpy.svg?branch=master)](https://travis-ci.com/hyphenOs/wishpy)
 [![Documentation Status](https://readthedocs.org/projects/wishpy/badge/?version=latest)](https://wishpy.readthedocs.io/en/latest/?badge=latest)
+[![Coverage Status](https://coveralls.io/repos/github/hyphenOs/wishpy/badge.svg)](https://coveralls.io/github/hyphenOs/wishpy)
 
 # What 'wishpy' is?
 
