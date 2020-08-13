@@ -69,8 +69,8 @@ if sys.platform != 'win32':
     all_cffi_modules.append(libpcap_ffi_module)
 
 setup(name='wishpy',
-        version='0.0.11',
-        description='Python Bindings for Wireshark using cffi',
+        version='0.1.0',
+        description='Python Bindings for Wireshark and libpcap using cffi',
         long_description=open('README.md').read(),
         long_description_content_type="text/markdown",
         author='hyphenOs Software Labs',
@@ -85,7 +85,7 @@ setup(name='wishpy',
             'examples/tshark.py',
             'examples/tcpdump.py'],
         url='https://github.com/hyphenOs/wishpy/',
-        keywords=['Python', 'Wireshark', 'Networking'],
+        keywords=['Python', 'Wireshark', 'Networking', 'libpcap'],
         license='GPLv3',
         classifiers=[
             "Development Status :: 2 - Pre-Alpha",

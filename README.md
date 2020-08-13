@@ -14,6 +14,7 @@ Python Bindings for `Wireshark` and `libpcap`
   if it doesn't please file an issue.
 - Also,a drop-in replacement for [`pcapy`](https://github.com/helpsystems/pcapy).
   Supports all the major `pcapy` APIs.
+- Early Windows support. Please check [`README-windows.md`](https://github.com/hyphenOs/wishpy/blob/master/README-windows.md).
 
 # Getting Started
 
@@ -47,12 +48,20 @@ If you have both the versions installed, it's a little bit tricky. If building
 `wireshark` from source, If you perform a `make install` (or `sudo make install`),
 the right `wireshark.pc` file is created and will be used during build.
 
-# PCAP support
+# `libpcap` support
 
-PCAP library > 1.7 is supported. Also, there is a `pcapy` module, that can be used as a drop in replacement for [pcapy](https://github.com/helpsystems/pcapy). Similar APIs as `pcapy` are supported. We have performed quick testing with following versions of `libpcap` on Ubuntu (based on git tag) - `libpcap-1.7.4`, `libpcap-1.8.1`, libpcap-1.9.1`.
+[`libpcap`](https://tcpdump.org) library > 1.7 is supported. Also, there is a `pcapy` module, that can be used as a drop in replacement for [pcapy](https://github.com/helpsystems/pcapy). Similar APIs as `pcapy` are supported. We have performed quick testing with following versions of `libpcap` on Ubuntu (based on git tag) - `libpcap-1.7.4`, `libpcap-1.8.1`, libpcap-1.9.1`.
 
 # Documentation
 
 We have started with some very 'basic' Dissector/Capturer API. See `examples/tshark.py` to see how it can be used.
 This API is very early (in fact this is not really an API, but just a hint about what API might look like.)
 and very likely to change going forward. A very early version of the [API Documentation is available.](https://wishpy.readthedocs.io/en/latest/api.html)
+
+# Examples
+
+See the code in `examples/` directory for how to use wishpy API.
+
+A More detailed example using `wishpy` for publishing to Redis is available at the following repo -
+
+* [wishpy-examples](https://github.com/hyphenOs/wishpy-examples)

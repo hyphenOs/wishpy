@@ -21,6 +21,12 @@ if __name__ == '__main__':
         print("Usage: tshark.py <filepath>")
         sys.exit(1)
 
+    count = 50000
+    if len(sys.argv) == 3:
+        try:
+            count = int(sys.argv[2])
+        except ValueError:
+            pass
     input_filepath = sys.argv[1]
 
     setup_process()
@@ -30,12 +36,13 @@ if __name__ == '__main__':
     then = dt.now()
 
     try:
+        print("Running dissector for %d Packets." % count)
         then = time.time()
-        for dissected in dissector.run(count=50000, skip=0):
+        for dissected in dissector.run(count=count, skip=0):
             pass #print(dissected)
 
         now = time.time()
-        print(now-then)
+        print("Total time taken in seconds:", now-then)
     except KeyboardInterrupt:
         cleanup_process()
 
