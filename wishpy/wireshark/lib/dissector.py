@@ -177,8 +177,12 @@ class WishpyDissectorBase:
         cls._test_json = True
 
     @classmethod
-    def enable_pretty_print(cls):
-        self._pretty = True
+    def pretty_print(cls, enabled):
+        cls._pretty = enabled
+        if enabled:
+            cls.packet_print_func = cls.print_dissected_tree_pretty_ftype_api
+        else:
+            cls.packet_print_func = cls.print_dissected_tree_ftype_api
 
     @classmethod
     def remove_ctrl_chars(cls, s):
@@ -334,17 +338,15 @@ class WishpyDissectorBase:
 
         return return_str
 
+    packet_print_func = print_dissected_tree_ftype_api
+
     @classmethod
     def packet_to_json(cls, handle_ptr):
         """ An example method that depicts how to use internal dissector API."""
 
         dissector = handle_ptr[0]
 
-        # FIXME: following should be like json dumps
-        if cls._pretty:
-            s = cls.print_dissected_tree_pretty_ftype_api(dissector.tree)
-        else:
-            s = cls.print_dissected_tree_ftype_api(dissector.tree)
+        s = cls.packet_print_func(dissector.tree)
         try:
             if cls._test_json:
                 _ = json.loads(s, strict=False)

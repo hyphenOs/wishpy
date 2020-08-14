@@ -77,13 +77,9 @@ setup(name='wishpy',
         author_email='gabhijit@hyphenos.io',
         license_files=['LICENSE', 'COPYING', 'COPYING-Wireshark', 'LICENSE-libpcap'],
         setup_requires=['cffi>=1.14.0'],
-        install_requires=['cffi>=1.14.0'],
+        install_requires=['cffi>=1.14.0', 'click'],
         cffi_modules=all_cffi_modules,
         packages=find_packages(),
-        scripts=['examples/tshark3.py',
-            'examples/tshark2.py',
-            'examples/tshark.py',
-            'examples/tcpdump.py'],
         url='https://github.com/hyphenOs/wishpy/',
         keywords=['Python', 'Wireshark', 'Networking', 'libpcap'],
         license='GPLv3',
@@ -102,4 +98,10 @@ setup(name='wishpy',
             "Topic :: System :: Networking",
             "Topic :: System :: Networking :: Monitoring",
         ],
+        entry_points="""
+        [console_scripts]
+        tshark=wishpy.scripts.tshark:dissect
+        tcpdump=wishpy.scripts.tcpdump:dump
+        pcap_pickler=wishpy.scripts.pcap_to_pickle:pickler
+        """,
         zip_safe=False)

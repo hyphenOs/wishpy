@@ -10,24 +10,25 @@ from threading import Thread
 from queue import Queue
 import pickle
 
+import click
+
 from wishpy.libpcap.lib.capturer import WishpyCapturerFileToQueue
 
-MAX_COUNT=-1
+@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.option("-c", "--count", default=100, help="Number of Packets to dissect (default: 0 - unlimited.)")
+@click.argument('filename', type=click.Path(exists=True))
+def pickler(count, filename):
+    """pcap_to_pickle: Dump Packets from PCAP as Pickle dump of (Header, Data)."""
 
-if __name__ == '__main__':
+    pickle_filename = filename + ".pickle"
 
-    if not len(sys.argv) == 2:
-        print('Usage: pcap_to_pickle.py <pcap-file>')
-        sys.exit(1)
-
+    click.echo("Dumping %d packets from %s to %s" % (count, filename, pickle_filename))
     packet_queue = Queue()
-    filename = sys.argv[1]
-
 
     capturer = WishpyCapturerFileToQueue(filename, packet_queue)
     capturer.open()
 
-    capturer_thread = Thread(target=capturer.start, args=(MAX_COUNT, True))
+    capturer_thread = Thread(target=capturer.start, args=(count, True))
 
     capturer_thread.start()
 
@@ -43,8 +44,10 @@ if __name__ == '__main__':
 
     assert pickle.loads(pickle.dumps(packet_list))  == packet_list
 
-    pickle_filename = filename + ".pickle"
-
     with open(pickle_filename, 'wb') as f:
         f.write(pickle.dumps(packet_list))
 
+
+if __name__ == '__main__':
+
+    pickler()
