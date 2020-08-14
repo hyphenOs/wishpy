@@ -35,8 +35,8 @@ in the `site-packages`.
 Once the packages are installed, you can run the example code -
 
 Alternatively, if you just want to use wrapped APIs, they are used in -
-1. `examples/tcpdump.py <interface_name>` (For live capturing the packets and dumping `json`, **NOTE:** Requires `sudo` permissions.)
-2. `examples/tshark.py <pcap-file-path>` (For dumping packets from a `pcap`ish file as `json`)
+1. `wishpy/scripts/tcpdump.py <interface_name>` (For live capturing the packets and dumping `json`, **NOTE:** Requires `sudo` permissions.)
+2. `wishpy/scripts/tshark.py <pcap-file-path>` (For dumping packets from a `pcap`ish file as `json`)
 
 # Wireshark support
 
@@ -54,13 +54,13 @@ the right `wireshark.pc` file is created and will be used during build.
 
 # Documentation
 
-We have started with some very 'basic' Dissector/Capturer API. See `examples/tshark.py` to see how it can be used.
+We have started with some very 'basic' Dissector/Capturer API. See `wishpy/scripts/tshark.py` to see how it can be used.
 This API is very early (in fact this is not really an API, but just a hint about what API might look like.)
 and very likely to change going forward. A very early version of the [API Documentation is available.](https://wishpy.readthedocs.io/en/latest/api.html)
 
 # Examples
 
-See the code in `examples/` directory for how to use wishpy API.
+See the code in `wishpy/scripts/` directory for how to use wishpy API.
 
 A More detailed example using `wishpy` for publishing to Redis is available at the following repo -
 
