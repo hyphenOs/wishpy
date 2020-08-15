@@ -28,7 +28,7 @@ _logger = logging.getLogger(__name__)
 from ._wrapper import *
 try:
     from ...libpcap.lib.capturer import PCAPHeader, pcap_ffi
-except:
+except: #pragma: no cover
     if os.getenv('READTHEDOCS', None) is not None:
         _logger.warning("Import Error, but it's okay during RTD Build.")
     else:

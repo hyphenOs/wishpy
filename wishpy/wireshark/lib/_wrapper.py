@@ -25,7 +25,7 @@ except ImportError:
         from .epan3_ext import ffi as epan_ffi
         _epan_version = (3, 2)
 
-    except ImportError:
+    except ImportError: #pragma: no cover
 
         if os.getenv('RTD_AUTODOC_FAKE_EXT', None) is not None or \
                 os.getenv('READTHEDOCS', None) is not None:
