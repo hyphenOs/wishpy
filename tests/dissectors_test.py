@@ -5,6 +5,8 @@ Test cases for our dissectors
 import os
 import unittest
 import json
+import pickle
+from queue import Queue
 
 from wishpy.wireshark.lib.dissector import *
 
@@ -104,3 +106,40 @@ class TestWishpyDissectorFile(unittest.TestCase):
         packet = json.loads(packet)
         self.assertEqual(count, 95)
         self.assertEqual(packet['frame']['frame.number'], 95)
+
+
+class TestWishpyDissectorPythonQueue(unittest.TestCase):
+
+    _96PINGS_PICKLE = os.path.join(_THIS_DIR, '96pings.pcap.pickle')
+
+    def setUp(self):
+        self.packet_queue = Queue()
+
+        with open(self._96PINGS_PICKLE, 'rb') as f:
+            packets = pickle.loads(f.read())
+
+        for packet in packets:
+            self.packet_queue.put(packet)
+
+        self.packet_queue.put(('stop', b''))
+
+    def test_valid_packets_from_queue(self):
+        """ Tests valid packets received from queue. """
+
+        WishpyDissectorQueuePython.pretty_print(enabled=True)
+        dissector = WishpyDissectorQueuePython(self.packet_queue)
+
+        count = 0
+        for _, _, packet in dissector.run():
+            if packet is not None:
+                count += 1
+            pass
+
+        self.assertEqual(count, 96)
+        self.assertEqual(packet, None)
+
+    def tearDown(self):
+        """teardown function, we empty the queue."""
+
+        while not self.packet_queue.empty():
+            _ = self.packet_queue.get()

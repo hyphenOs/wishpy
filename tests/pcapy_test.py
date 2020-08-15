@@ -150,7 +150,7 @@ class TestPcapy(unittest.TestCase):
 
     def test_get_bpf(self):
         """
-        #9 disabled -- Test the context manager support
+        #9 Test: get_bpf
         """
         bpf = pcapy.compile(pcapy.DLT_EN10MB, 2**16, "icmp", 1, 1)
         code = bpf.get_bpf()
@@ -168,6 +168,29 @@ class TestPcapy(unittest.TestCase):
         result += "\n".join([' '.join(map(str, inst)) for inst in code])
 
         self.assertEqual(expected, result)
+
+    def test_pcapy_open_live_invalid_iface(self):
+        """
+        Test `open_live` raises `PcapError`.
+        """
+
+        fake_iface = 'fakeeth0'
+
+        with self.assertRaises(pcapy.PcapError) as e:
+            _ = pcapy.open_live(
+                    fake_iface, snaplen=1024,
+                    promisc=False, to_ms=1)
+
+            pass
+
+    def test_pcapy_lookupdev_findalldevs(self):
+        """
+        Tests `lookupdev` and `findalldevs`
+        """
+
+        iface = pcapy.lookupdev()
+
+        self.assertNotEqual(iface, None)
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestPcapy)

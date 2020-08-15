@@ -327,7 +327,7 @@ class WishpyCapturerFileToQueue(WishpyCapturerQueue):
         return "{} filename:{}".format(self.__class__.__name__, self.__filename)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': #pragma: no cover
     from queue import Queue
     c = LibpcapCapturerIface('wlp2s0', Queue())
     print(c)

@@ -155,7 +155,8 @@ def compile(linktype, snaplen, filterstr, optimize=False, netmask=0):
 
     except Exception as e:
         raise PcapError("Unknown Error Occurred.")
-def create():
+
+def create(): #pragma: no cover
     pass
 
 
@@ -655,7 +656,7 @@ class _Dumper:
         self._do_close()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': #pragma: no cover
 
     h = _pcap_ffi.new('struct pcap_pkthdr *')
     ph = Pkthdr(h)
