@@ -58,7 +58,10 @@ from .epan_dissect_h import epan_epan_dissect_h_types_cdef
 from .proto_h import epan_proto_h_types_cdef
 from .ftypes_h import epan_ftypes_h_types_cdef
 from .ftypes_h import epan_ftypes_h_funcs_cdef
-
+from .dfilter_h import (
+        epan_dfilter_h_types_cdef,
+        epan_dfilter_h_funcs_cdef
+        )
 
 epan_ffi = FFI()
 
@@ -99,6 +102,8 @@ epan_ffi.cdef(epan_address_h_types_cdef)
 epan_ffi.cdef(epan_packet_info_h_cdef)
 epan_ffi.cdef(epan_ftypes_h_types_cdef)
 epan_ffi.cdef(epan_ftypes_h_funcs_cdef)
+epan_ffi.cdef(epan_dfilter_h_types_cdef)
+epan_ffi.cdef(epan_dfilter_h_funcs_cdef)
 epan_ffi.cdef(epan_proto_h_types_cdef)
 epan_ffi.cdef(epan_epan_dissect_h_types_cdef)
 epan_ffi.cdef(epan_h_cdef)
@@ -118,6 +123,7 @@ _sources = '''
             #include <epan/epan.h>
             #include <epan/packet.h>
             #include <epan/prefs.h>
+            #include <epan/dfilter/dfilter.h>
             #include <wsutil/privileges.h>
 
             struct packet_provider_data {
