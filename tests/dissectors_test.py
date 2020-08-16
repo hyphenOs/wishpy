@@ -107,6 +107,35 @@ class TestWishpyDissectorFile(unittest.TestCase):
         self.assertEqual(count, 95)
         self.assertEqual(packet['frame']['frame.number'], 95)
 
+    def test_dissector_file_filter_tcp(self):
+        """ When a 'tcp' filter is applied, no packets should match."""
+
+        dissector = WishpyDissectorFile(self._96PINGS)
+        dissector.apply_filter("tcp")
+
+        count = 0
+        for packet in dissector.run(count=0, skip=1):
+            count += 1
+            pass
+
+        self.assertEqual(count, 0)
+
+    def test_dissector_file_filter_icmp(self):
+        """ When a 'tcp' filter is applied, no packets should match."""
+
+        dissector = WishpyDissectorFile(self._96PINGS)
+        dissector.apply_filter("icmp")
+
+        count = 0
+        for packet in dissector.run(count=0):
+            count += 1
+            pass
+
+        self.assertEqual(count, 96)
+        self.assertNotEqual(packet, None)
+        packet = json.loads(packet)
+        self.assertEqual(packet['frame']['frame.number'], 96)
+
 
 class TestWishpyDissectorPythonQueue(unittest.TestCase):
 

@@ -103,6 +103,7 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
     elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
     ref_frame_data_ptr = wishpy_dissector.ref_frame_data_ptr
     last_frame_data = wishpy_dissector.last_frame_data
+    dfilter_obj_ptr = wishpy_dissector.dfilter_obj_ptr
 
     if ref_frame_data_ptr[0] == epan_ffi.NULL:
         curr_frame_data = wishpy_dissector.first_frame_data
@@ -150,7 +151,10 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
             elapsed_time_ptr, ref_frame_data_ptr, last_frame_data)
 
     # Not sure what this is - Just copied from `tshark` sources
-    epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(epan_dissect_obj)
+    # epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(epan_dissect_obj)
+
+    if dfilter_obj_ptr:
+        epan_lib.epan_dissect_prime_with_dfilter(epan_dissect_obj, dfilter_obj_ptr)
 
     ## Do actual dissection here.
     # Get buffer and tvbuff first and then run dissector
@@ -158,11 +162,17 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
     epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type, rec,
             tvb_ptr, curr_frame_data, epan_ffi.NULL)
 
-    dissected = cb_func(epan_dissect_obj)
+    filter_passed = True
+    if dfilter_obj_ptr:
+        filter_passed = epan_lib.dfilter_apply_edt(dfilter_obj_ptr, epan_dissect_obj)
 
-    # Get into last data - useful for relative analysis
-    epan_ffi.memmove(last_frame_data,
-            curr_frame_data, epan_ffi.sizeof('frame_data'))
+    dissected = None
+    if filter_passed :
+        dissected = cb_func(epan_dissect_obj)
+
+        # Get into last data - useful for relative analysis
+        epan_ffi.memmove(last_frame_data,
+                curr_frame_data, epan_ffi.sizeof('frame_data'))
 
     # Reset the frame data and dissector object
     epan_lib.frame_data_set_after_dissect(curr_frame_data, cum_bytes)
@@ -180,6 +190,7 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
     elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
     ref_frame_data_ptr = wishpy_dissector.ref_frame_data_ptr
     last_frame_data = wishpy_dissector.last_frame_data
+    dfilter_obj_ptr = wishpy_dissector.dfilter_obj_ptr
 
     offset = epan_ffi.new('gint64 *')
 
@@ -218,9 +229,12 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
                     elapsed_time_ptr, ref_frame_data_ptr, last_frame_data)
 
             # Not sure what this is - Just copied from `tshark` sources
-            epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
-                    epan_dissect_obj)
+            #epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
+                    #epan_dissect_obj)
 
+            if dfilter_obj_ptr:
+                epan_lib.epan_dissect_prime_with_dfilter(
+                        epan_dissect_obj, dfilter_obj_ptr)
             ## Do actual dissection here.
             # Get buffer and tvbuff first and then run dissector
             tvb_ptr = epan_lib.tvb_new_real_data(buf_ptr, pkt_len,
@@ -233,11 +247,18 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
                 skipped += 1
                 continue
 
-            dissected = cb_func(epan_dissect_obj)
+            filter_passed = True
+            if dfilter_obj_ptr:
+                filter_passed = epan_lib.dfilter_apply_edt(dfilter_obj_ptr,
+                        epan_dissect_obj)
 
-            # Get into last data - useful for relative analysis
-            epan_ffi.memmove(last_frame_data,
-                curr_frame_data, epan_ffi.sizeof('frame_data'))
+            dissected = None
+            if filter_passed:
+                dissected = cb_func(epan_dissect_obj)
+
+                # Get into last data - useful for relative analysis
+                epan_ffi.memmove(last_frame_data,
+                    curr_frame_data, epan_ffi.sizeof('frame_data'))
 
             # Reset the frame data and dissector object
             epan_lib.frame_data_set_after_dissect(curr_frame_data, cum_bytes)
@@ -245,7 +266,8 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
 
             processed += 1
 
-            yield dissected
+            if filter_passed:
+                yield dissected
 
             if processed == count + 1:
                 break
@@ -266,6 +288,7 @@ def _epan_perform_one_packet_dissection_v3(wishpy_dissector, frames, hdr, packet
     elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
     ref_frame_data_ptr = wishpy_dissector.ref_frame_data_ptr
     last_frame_data = wishpy_dissector.last_frame_data
+    dfilter_obj_ptr = wishpy_dissector.dfilter_obj_ptr
 
     if ref_frame_data_ptr[0] == epan_ffi.NULL:
         curr_frame_data = wishpy_dissector.first_frame_data
@@ -315,8 +338,11 @@ def _epan_perform_one_packet_dissection_v3(wishpy_dissector, frames, hdr, packet
             elapsed_time_ptr, ref_frame_data_ptr, last_frame_data)
 
     # Not sure what this is - Just copied from `tshark` sources
-    epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
-            epan_dissect_obj)
+    #epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
+            #epan_dissect_obj)
+
+    if dfilter_obj_ptr:
+        epan_lib.epan_dissect_prime_with_dfilter(epan_dissect_obj, dfilter_obj_ptr)
 
     ## Ready to do `dissection` here.
     # Get buffer and tvbuff first and then run dissector
@@ -326,11 +352,19 @@ def _epan_perform_one_packet_dissection_v3(wishpy_dissector, frames, hdr, packet
     epan_lib.epan_dissect_run(epan_dissect_obj, wth_file_type,
             rec, tvb_ptr, curr_frame_data, epan_ffi.NULL)
 
-    dissected = cb_func(epan_dissect_obj)
+    filter_passed = True
+    if dfilter_obj_ptr is not None:
+        filter_passed = epan_lib.dfilter_apply_edt(dfilter_obj_ptr, epan_dissect_obj)
 
-    # Get into last data - useful for relative analysis
-    epan_ffi.memmove(last_frame_data,
-            curr_frame_data, epan_ffi.sizeof('frame_data'))
+    dissected = None
+    if filter_passed:
+        print(filter_passed)
+        dissected = cb_func(epan_dissect_obj)
+
+        # Get into last data - useful for relative analysis
+        epan_ffi.memmove(last_frame_data,
+                curr_frame_data, epan_ffi.sizeof('frame_data'))
+
     # Reset the frame data and dissector object
     epan_lib.frame_data_set_after_dissect(curr_frame_data, cum_bytes)
     epan_lib.epan_dissect_reset(epan_dissect_obj)
@@ -349,6 +383,7 @@ def _epan_perform_dissection_v3(wishpy_dissector, wth, wth_file_type, cb_func, c
     elapsed_time_ptr = wishpy_dissector.elapsed_time_ptr
     ref_frame_data_ptr = wishpy_dissector.ref_frame_data_ptr
     last_frame_data = wishpy_dissector.last_frame_data
+    dfilter_obj_ptr = wishpy_dissector.dfilter_obj_ptr
 
     offset = epan_ffi.new('gint64 *')
 
@@ -387,9 +422,12 @@ def _epan_perform_dissection_v3(wishpy_dissector, wth, wth_file_type, cb_func, c
                     elapsed_time_ptr, ref_frame_data_ptr, last_frame_data)
 
             # Not sure what this is - Just copied from `tshark` sources
-            epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
-                    epan_dissect_obj)
+            #epan_lib.prime_epan_dissect_with_postdissector_wanted_hfids(
+                    #epan_dissect_obj)
 
+            if dfilter_obj_ptr:
+                epan_lib.epan_dissect_prime_with_dfilter(
+                        epan_dissect_obj, dfilter_obj_ptr)
             ## Do actual dissection here.
             # Get buffer and tvbuff first and then run dissector
             tvb_ptr = epan_lib.tvb_new_real_data(buf[0].data, pkt_len,
@@ -402,11 +440,16 @@ def _epan_perform_dissection_v3(wishpy_dissector, wth, wth_file_type, cb_func, c
                 skipped += 1
                 continue
 
-            dissected = cb_func(epan_dissect_obj)
+            filter_passed = True
+            if dfilter_obj_ptr is not None:
+                filter_passed = epan_lib.dfilter_apply_edt(dfilter_obj_ptr,
+                        epan_dissect_obj)
+            if filter_passed :
+                dissected = cb_func(epan_dissect_obj)
 
-            # Get into last data - useful for relative analysis
-            epan_ffi.memmove(last_frame_data,
-                    curr_frame_data, epan_ffi.sizeof('frame_data'))
+                # Get into last data - useful for relative analysis
+                epan_ffi.memmove(last_frame_data,
+                        curr_frame_data, epan_ffi.sizeof('frame_data'))
 
             # Reset the frame data and dissector object
             epan_lib.frame_data_set_after_dissect(curr_frame_data, cum_bytes)
@@ -414,7 +457,8 @@ def _epan_perform_dissection_v3(wishpy_dissector, wth, wth_file_type, cb_func, c
 
             processed += 1
 
-            yield dissected
+            if filter_passed:
+                yield dissected
 
             if processed == count + 1:
                 break

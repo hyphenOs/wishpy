@@ -22,8 +22,9 @@ from wishpy.utils.profiler import WishpyContextProfiler
 @click.option("--timed", is_flag=True, help="Time the operation.")
 @click.option("--silent", is_flag=True, help="Don't print the output.")
 @click.option("--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
+@click.option("--filter", help="Filter string")
 @click.argument('filename', type=click.Path(exists=True))
-def dissect(pretty, profiled, timed, silent, count, filename):
+def dissect(pretty, profiled, timed, silent, count, filter, filename):
     """tshark: dissect packets from a PCAPish file."""
 
     logger = logging.getLogger()
@@ -34,6 +35,13 @@ def dissect(pretty, profiled, timed, silent, count, filename):
     WishpyDissectorFile.pretty_print(enabled=pretty)
 
     dissector = WishpyDissectorFile(filename)
+
+    if filter:
+        result, error = dissector.apply_filter(filter)
+
+        if result != 0:
+            logger.error("Unable to apply filter: %s", error)
+            sys.exit(1)
 
     then = dt.now()
 

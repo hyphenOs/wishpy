@@ -367,6 +367,7 @@ class WishpyDissectorBase:
         self._first_frame_data = None
         self._last_frame_data = None
         self._provider = None
+        self._dfilter_obj_ptr = None
 
     @property
     def last_frame_data(self):
@@ -388,6 +389,10 @@ class WishpyDissectorBase:
     def epan_dissector(self):
 
         return self._epan_dissector
+
+    @property
+    def dfilter_obj_ptr(self):
+        return self._dfilter_obj_ptr
 
     @property
     def epan_session(self):
@@ -434,6 +439,7 @@ class WishpyDissectorBase:
         del self._last_frame_data
         del self._provider
         del self._ref_frame_data_ptr
+        del self._dfilter_obj_ptr
 
         self._elapsed_time_ptr = None
 
@@ -451,11 +457,54 @@ class WishpyDissectorBase:
         This is particularly convenient while performing live capture on
         an interface or dissecting a huge file.
 
-
-
-
         """
         raise NotImplemented("Derived Classes need to implement this.")
+
+    def apply_filter(self, filter_str, overwrite=False):
+        """
+        Applies a filter given by the filter_str to the dissection.
+
+        Args:
+            filter_str: str - A string that is in a wireshark filter format.
+
+        Returns:
+            result: (int, str) - Result of application 0 success. Negative value
+            suggesting error. Caller should check the error.
+
+        Note: Right now it is recommended to run this method before `run` method
+        is called on the dissector.
+
+        """
+        if self._dfilter_obj_ptr and not overwrite:
+            return (-1, "Display Filter already set and 'overwrite' not set.")
+
+        dfilter_obj_ptr = epan_ffi.new('dfilter_t **')
+        err_str_ptr = epan_ffi.new('gchar **')
+        result = epan_lib.dfilter_compile(
+                filter_str.encode(),
+                dfilter_obj_ptr,
+                err_str_ptr)
+
+        if not result:
+            err_str = epan_ffi.string(err_str_ptr[0])
+            return (-2, err_str.decode())
+
+        old = None
+        if self._dfilter_obj_ptr:
+            old = self._dfilter_obj_ptr
+
+        self._dfilter_obj_ptr = dfilter_obj_ptr[0]
+        if old is not None:
+            del old_dfilter_obj_ptr
+
+        return (0, None)
+
+    def clear_filter(self):
+        """Clears the dfilter if any."""
+        if self._dfilter_obj_ptr:
+            o = self._dfilter_obj_ptr
+            self._dfilter_obj_ptr = None
+            del o
 
 
 class WishpyDissectorFile(WishpyDissectorBase):
@@ -605,6 +654,10 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
             fetched += 1
             try:
                 hdr, data, d = self.dissect_one_packet()
+
+                if data and d is None:
+                    # Packet was there, but filter rejected it
+                    continue
             except:
                 _logger.exception("dissect_one_packet")
                 break

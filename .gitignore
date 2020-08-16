@@ -11,3 +11,5 @@ build
 **/*so
 .tox
 docs/_build
+.coverage
+htmlcov
