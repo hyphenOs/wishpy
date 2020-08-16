@@ -18,8 +18,9 @@ from wishpy.wireshark.lib.dissector import (
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option("-c", "--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
 @click.option("--pretty", is_flag=True, help="Pretty print output")
+@click.option("--filter", help="Filter string")
 @click.argument('interface')
-def dump(count, pretty, interface):
+def dump(count, pretty, filter, interface):
     """Capture and dump packets as json."""
 
     try:
@@ -36,6 +37,10 @@ def dump(count, pretty, interface):
 
         WishpyDissectorQueuePython.pretty_print(enabled=pretty)
         dissector = WishpyDissectorQueuePython(packet_queue)
+        if filter:
+            result, error = dissector.apply_filter(filter)
+            if result != 0:
+                raise ValueError(error)
 
         for _, _, dissected in dissector.run(count=count):
             print(dissected)
