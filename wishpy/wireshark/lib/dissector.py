@@ -516,10 +516,10 @@ class WishpyDissectorFile(WishpyDissectorBase):
         self.__filename = filename
 
     def run(self, count=0, skip=-1):
-        """
-        Actual function that performs the Dissection. Right now since we are
-        only supporting dissecting packets from Wiretap supported files,
-        only dissects packets from a pcap(ish) file.
+        """Actual function that performs the Dissection.
+
+        Right now since we are only supporting dissecting packets from Wiretap
+        supported files, only dissects packets from a pcap(ish) file.
 
         """
 
@@ -566,8 +566,8 @@ class WishpyDissectorQueue(WishpyDissectorBase):
     def dissect_one_packet(self):
         """Dissects a single packet
 
-        This should typically call `fetch` and the perform dissection. All
-        the queue based `dissectors` will dissect one packet at a time, so
+        This should typically call ``fetch`` and the perform dissection. All
+        the queue based 'dissectors' will dissect one packet at a time, so
         it's better that this function is in the base class.
 
         """

@@ -19,6 +19,12 @@ except ImportError:
         raise
 
 PCAPHeader = namedtuple('PCAPHeader', ['ts_sec', 'ts_usec', 'len', 'caplen'])
+PCAPHeader.__doc___ = """A Wrapper around PCAP Header."""
+PCAPHeader.ts_sec.__doc__ = "seconds part of the timestamp."
+PCAPHeader.ts_usec.__doc__ = "micro-seconds part of the timestamp."
+PCAPHeader.len.__doc__ = "length of the packet."
+PCAPHeader.caplen.__doc__ = "captured length of the packet."
+
 
 class WishpyCapturerOpenError(Exception):
     pass
@@ -27,7 +33,7 @@ class WishpyCapturerCaptureError(Exception):
     pass
 
 class WishpyCapturer:
-    """ ase WishpyCapturer class.
+    """Base WishpyCapturer class.
 
         Following API are provided  `open`, `close`, `start`, `stop`.
     """
@@ -41,6 +47,11 @@ class WishpyCapturer:
             be performed here in this method.
         """
         raise NotImplementedError
+
+    def close(self):
+        """close: Perform any resource cleanup related to the capturer.
+        """
+        pass
 
     def start(self, **kw):
         """start: Start actual capture of packets.
@@ -58,11 +69,6 @@ class WishpyCapturer:
         """
         raise NotImplementedError
 
-    def close(self):
-        """close: Perform any resource cleanup related to the capturer.
-        """
-        pass
-
 class WishpyCapturerQueue(WishpyCapturer):
     """Base Class for Sending Packets to Python Queue like objects.
 
@@ -72,10 +78,12 @@ class WishpyCapturerQueue(WishpyCapturer):
         """Constructor
 
         Args:
-            queue:  Python Queue like objects that supported Get/Put APIs
-                    in a thread/process safe manner. (eg. Queue,
-                    multiprocessing Queue etc.)
-            *kw: Possible keyword arguments.
+            queue: Python Queue like objects that supported Get/Put APIs
+
+                   The Get/Put APIs should be in a thread/process safe manner.
+                   (eg. Queue, multiprocessing Queue etc.)
+
+            \*\*kw: Possible keyword arguments.
         """
         self._queue = queue
         self._pcap_handle = None
@@ -85,23 +93,31 @@ class WishpyCapturerQueue(WishpyCapturer):
         return self._queue
 
     def start(self, count=-1, serialize=True):
-        """ Starts capturing of the packets.
+        """Starts capturing of the packets.
 
-        Note: This is a blocking function and an application should call this
-            function from a separate thread of execution.  Calls internal
-            `pcap_loop` function of libpcap.
+        Note: This is a blocking function.
+
+              An application should call this function from a separate
+              thread of execution.  Calls internal ``pcap_loop`` function of
+              ``libpcap``.
 
         Args:
             count: (optional) if specified should be a positive integer
                     specifying maximum number of packets to be captured.
-                    serialize: bool, optional - if specified serializes the header
-                    and data to `PCAPHeader` and `bytes` objects (default=True)
+
+            serialize: (optional) bool - Serialize data
+                    If specified serializes the header and data to ``PCAPHeader`` and ``bytes`` objects
+                    (default ``True``)
 
         Returns:
-            On Success Nothing
+            On Success Nothing.
+
+            When ``pcap_loop`` returns, A special tuple - ``('stop', b'')``
+            is placed on the queue. For the consumer of the queue, this should
+            signal end of data transfer from the producer.
 
         Raises:
-            On Error Condition, `WishpyCapturerCaptureError`.
+            On Error Condition `wishpy.wireshark.lib.WishpyCapturerCaptureError`.
 
         """
 
@@ -134,7 +150,7 @@ class WishpyCapturerQueue(WishpyCapturer):
     def stop(self):
         """ Stops the capture.
 
-        Simply calls internal libpcap's `pcap_breakloop`
+        Simply calls internal ``libpcap``'s ``pcap_breakloop``
         """
 
         _logger.debug("%s.stop", self.__class__.__name__)
@@ -149,7 +165,7 @@ class WishpyCapturerQueue(WishpyCapturer):
 
 
 class WishpyCapturerIfaceToQueue(WishpyCapturerQueue):
-    """'libpcap' based packet capturer for an interface on the system.
+    """``libpcap`` based packet capturer for an interface on the system.
 
         This capturer captures packet from the OS interface and posts them,
         on the Queue. Right now it is not completely abstracted out what gets
@@ -161,24 +177,26 @@ class WishpyCapturerIfaceToQueue(WishpyCapturerQueue):
         """Constructor
 
             Args:
-                queue:   Python Queue like objects that supported Get/Put APIs
-                         in a thread/process safe manner. (eg. Queue,
-                         multiprocessing Queue etc.)
+                queue:   Python Queue like objects that supported Get/Put APIs.
+
+                         Get/Put APIs should be thread/process safe.  (eg. Queue, multiprocessing Queue etc.)
+
                 iface:   string - An Interface Name on the local OS.
-                snaplen: integer (optional), should be non-zero, if provided,
-                         maximum capture data for packet will be capped to this
-                         value. Default - Don't set Capture length (ie. if
-                         input value is 0.)
-                promisc: Boolean (optional). Default True To determine whether
-                         to start capturing in 'promiscuous' mode.
-                timeout: integer - Timeout in miliseconds to wait before next
-                         'batch' of captured packets is returned (maps
-                         directly to `libpcap: packet buffer timeout`.)
-                         Default value is 10ms. Use lower values for more
-                         'responsive' capture, higher values for larger
-                         batches.
-                **kw:    Possible Keyword argument's that can be supported
-                         include 'maximum number of packets to capture etc.
+
+                snaplen: integer (optional), Maximum Capture length of the data.
+
+                         Default - Don't set Capture length (ie. if input value is 0.)
+
+                promisc: Boolean (optional). Default True To determine whether to start capturing in 'promiscuous' mode.
+
+                timeout: integer - Timeout in miliseconds to wait before next 'batch' of captured packets is returned
+
+                        (This value maps directly to `libpcap: packet buffer timeout`.)
+                        Default value is 10ms. Use lower values for more 'responsive' capture, higher values for larger
+                        batches.
+
+                \*\*kw:    Possible Keyword argument's that can be supported.
+
         """
 
         super().__init__(queue, **kw)
@@ -279,14 +297,16 @@ class WishpyCapturerFileToQueue(WishpyCapturerQueue):
     :class:`wishpy.wireshark.lib.dissector.WishpyDissectorFile`. This class
     should be used when you want to take packets from a PCAP file and do
     something other than 'dissect'ing them.
+
     """
 
     def __init__(self, filename, queue, **kw):
         """Constructor
 
-        Args:
-            filename: PCAP file to be opened for reading.
-            queue:  Queue to send packets to.
+            Args:
+                filename: PCAP file to be opened for reading.
+
+                queue:  Queue to send packets to.
         """
 
         super().__init__(queue, **kw)
