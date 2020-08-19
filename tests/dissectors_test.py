@@ -88,7 +88,7 @@ class TestWishpyDissectorFile(unittest.TestCase):
         for packet in dissector.run(count=2):
             pass
 
-        packet = json.loads(packet)
+        packet = json.loads(packet, strict=False)
         self.assertEqual(packet['frame']['frame.number'], 2)
 
     def test_valid_packet_json_non_zero_count_skip(self):
@@ -103,7 +103,7 @@ class TestWishpyDissectorFile(unittest.TestCase):
             count += 1
             pass
 
-        packet = json.loads(packet)
+        packet = json.loads(packet, strict=False)
         self.assertEqual(count, 95)
         self.assertEqual(packet['frame']['frame.number'], 95)
 
@@ -133,7 +133,7 @@ class TestWishpyDissectorFile(unittest.TestCase):
 
         self.assertEqual(count, 96)
         self.assertNotEqual(packet, None)
-        packet = json.loads(packet)
+        packet = json.loads(packet, strict=False)
         self.assertEqual(packet['frame']['frame.number'], 96)
 
 
@@ -155,7 +155,8 @@ class TestWishpyDissectorPythonQueue(unittest.TestCase):
     def test_valid_packets_from_queue(self):
         """ Tests valid packets received from queue. """
 
-        WishpyDissectorQueuePython.pretty_print(enabled=True)
+        WishpyDissectorQueuePython.set_pretty_print_details(enabled=True,
+                add_proto_tree=True)
         dissector = WishpyDissectorQueuePython(self.packet_queue)
 
         count = 0
