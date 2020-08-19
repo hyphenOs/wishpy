@@ -23,8 +23,9 @@ from wishpy.utils.profiler import WishpyContextProfiler
 @click.option("--silent", is_flag=True, help="Don't print the output.")
 @click.option("--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
 @click.option("--filter", help="Filter string")
+@click.option("--add-proto-tree", is_flag=True, help="Print like a Wireshark Proto Tree.")
 @click.argument('filename', type=click.Path(exists=True))
-def dissect(pretty, profiled, timed, silent, count, filter, filename):
+def dissect(pretty, profiled, timed, silent, count, filter, add_proto_tree, filename):
     """tshark: dissect packets from a PCAPish file."""
 
     logger = logging.getLogger()
@@ -32,7 +33,7 @@ def dissect(pretty, profiled, timed, silent, count, filter, filename):
 
     setup_process()
 
-    WishpyDissectorFile.pretty_print(enabled=pretty)
+    WishpyDissectorFile.pretty_print(enabled=pretty, add_proto_tree=add_proto_tree)
 
     dissector = WishpyDissectorFile(filename)
 
@@ -59,7 +60,7 @@ def dissect(pretty, profiled, timed, silent, count, filter, filename):
         then = time.time()
 
         with WishpyContextProfiler(enabled=profiled, contextstr="dissector-run") as p:
-            for dissected in dissector.run(count=10000, skip=0):
+            for dissected in dissector.run(count=count, skip=0):
                 if not silent:
                     print(dissected)
 

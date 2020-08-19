@@ -64,8 +64,8 @@ class WishpyDissectorBase:
     """
 
     _pretty = False
-
-    _test_json = False
+    _add_proto_tree = False
+    _test_json = True
 
     # We are having these definitions in the class because a lot many of them
     # are used in fast path and having them dereferenced here gives us some
@@ -127,8 +127,6 @@ class WishpyDissectorBase:
     FT_FLOAT = epan_lib.FT_FLOAT
     FT_DOUBLE = epan_lib.FT_DOUBLE
 
-
-
     epan_int_types = [
                 FT_INT8,
                 FT_INT16,
@@ -177,26 +175,27 @@ class WishpyDissectorBase:
         cls._test_json = True
 
     @classmethod
-    def pretty_print(cls, enabled):
+    def set_pretty_print_details(cls, enabled=False, add_proto_tree=False):
         cls._pretty = enabled
         if enabled:
-            cls.packet_print_func = cls.print_dissected_tree_pretty_ftype_api
+            cls.packet_print_func = cls.print_dissected_tree_json_pretty
         else:
-            cls.packet_print_func = cls.print_dissected_tree_ftype_api
+            cls.packet_print_func = cls.print_dissected_tree_json
+
+        if add_proto_tree:
+            cls._add_proto_tree = True
 
     @classmethod
-    def remove_ctrl_chars(cls, s):
-        """Removes the Ctrl Characters from the string.
-        """
-        # FIXME: May be we should replace them with their unicode code points
-        category_fn = unicodedata.category
-        return "".join(ch for ch in s if category_fn(ch)[0] != "C")
+    def print_dissected_tree_json_pretty(cls, dissector):
+        node = dissector[0].tree
+        return cls.print_dissected_tree_json_node_pretty(node)
 
     @classmethod
-    def print_dissected_tree_pretty_ftype_api(cls, node_ptr, level=1):
+    def print_dissected_tree_json_node_pretty(cls, node_ptr, level=1):
         """Returns a string that represents a dissected tree.
         """
         return_str = ""
+        tabstop = 4
 
         node = node_ptr[0]
         finfo = node.finfo
@@ -221,7 +220,7 @@ class WishpyDissectorBase:
                     if hfinfo.type == cls.FT_STRING:
                         finfo_display_str = finfo_display_str.\
                                 replace('\\', '\\\\').replace('"', '\\"')
-                        finfo_display_str = cls.remove_ctrl_chars(finfo_display_str)
+                        finfo_display_str = cls._remove_ctrl_chars(finfo_display_str)
                     finfo_display_str = '"' + finfo_display_str + '"'
                 else:
                     try:
@@ -236,8 +235,8 @@ class WishpyDissectorBase:
 
                 return_str += finfo_display_str
 
-        lspaces = " " * level
-        lspaces_1 = " " * (level - 1)
+        lspaces = " " * level * tabstop
+        lspaces_1 = " " * (level - 1) * tabstop
         newlevel = level + 1
 
         child = node.first_child
@@ -256,11 +255,18 @@ class WishpyDissectorBase:
             return_str += "\n"
             while child != cls.NULL:
                 return_str += lspaces
-                return_str += cls.print_dissected_tree_pretty_ftype_api(child, newlevel)
+                return_str += cls.print_dissected_tree_json_node_pretty(child, newlevel)
                 child = child.next
             return_str += lspaces
 
             return_str += "\n" + lspaces_1
+
+            # details - protect by a flag
+            if level == 1 and cls._add_proto_tree:
+                return_str += ","
+                return_str += "\"proto_tree\":"
+                return_str += "\"" + cls.print_dissected_tree_details_node(node_ptr, level) + "\""
+
             return_str += "}"
         else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
             if not finfo_display_str:
@@ -271,7 +277,12 @@ class WishpyDissectorBase:
         return return_str
 
     @classmethod
-    def print_dissected_tree_ftype_api(cls, node_ptr):
+    def print_dissected_tree_json(cls, dissector):
+        node = dissector[0].tree
+        return cls.print_dissected_tree_json_node(node)
+
+    @classmethod
+    def print_dissected_tree_json_node(cls, node_ptr, level=1):
         """Returns a string representing dissected tree using the `ftypes` API.
         """
         return_str = ""
@@ -283,8 +294,9 @@ class WishpyDissectorBase:
         if finfo != cls.NULL:
 
             hfinfo = finfo.hfinfo[0]
-            display = hfinfo.display
             abbrev = cls.epan_string(hfinfo.abbrev).decode()
+            display = hfinfo.display
+
             abbrev_str = '"' + abbrev + '"'
             return_str += abbrev_str + ":"
             finfo_str = cls.fvalue_to_string_repr(
@@ -299,7 +311,7 @@ class WishpyDissectorBase:
                     if hfinfo.type == cls.FT_STRING:
                         finfo_display_str = finfo_display_str.\
                                 replace('\\', '\\\\').replace('"', '\\"')
-                        finfo_display_str = cls.remove_ctrl_chars(finfo_display_str)
+                        finfo_display_str = cls._remove_ctrl_chars(finfo_display_str)
                     finfo_display_str = '"' + finfo_display_str + '"'
                 else:
                     try:
@@ -314,6 +326,7 @@ class WishpyDissectorBase:
 
                 return_str += finfo_display_str
 
+        newlevel = level + 1
         child = node.first_child
         if child != cls.NULL:
 
@@ -326,9 +339,13 @@ class WishpyDissectorBase:
 
             return_str += "{"
             while child != cls.NULL:
-                return_str += cls.print_dissected_tree_ftype_api(child)
+                return_str += cls.print_dissected_tree_json_node(child, newlevel)
                 child = child.next
 
+            if level == 1 and cls._add_proto_tree:
+                return_str += ","
+                return_str += "\"proto_tree\":"
+                return_str += "\"" + cls.print_dissected_tree_details_node(node_ptr, level) + "\""
             return_str += "}"
         else: # child is not None So we have someone who's FT_NONE, FT_PROTOCOL and no tree?
             if not finfo_display_str:
@@ -338,15 +355,85 @@ class WishpyDissectorBase:
 
         return return_str
 
-    packet_print_func = print_dissected_tree_ftype_api
+    packet_print_func = print_dissected_tree_json
+
+    @classmethod
+    def print_dissected_tree_details_api(cls, dissector):
+        """Print a packets Protocol tree using `proto_tree_json` API
+        """
+        ops = epan_ffi.new('print_stream_ops_t *')
+        print_stream = new_wishpy_print_stream(ops)
+
+        cls.ops = ops
+        cls.print_stream = print_stream
+
+        epan_lib.proto_tree_print(
+                epan_lib.print_dissections_expanded,
+                False,
+                dissector,
+                epan_ffi.NULL,
+                print_stream)
+
+    @classmethod
+    def print_dissected_tree_details(cls, dissector):
+        """
+        """
+        node = dissector[0].tree
+        level = 0
+        return cls.print_dissected_tree_details_node(node, level)
+
+
+    @classmethod
+    def print_dissected_tree_details_node(cls, node_ptr, level):
+
+        tabstop = 4
+        label_str = epan_ffi.new('gchar [240]')
+        return_str = ""
+        spaces = (level - 1) * " " * tabstop
+
+        node = node_ptr[0]
+        finfo = node.finfo
+
+        finfo_display_str = None
+        if finfo != cls.NULL:
+
+            hfinfo = finfo.hfinfo[0]
+            abbrev = cls.epan_string(hfinfo.abbrev).decode()
+            display = hfinfo.display
+            rep = finfo.rep
+
+            abbrev_str = '"' + abbrev + '"'
+            #return_str += abbrev_str + ":"
+
+            if rep != epan_ffi.NULL:
+                finfo_str = epan_ffi.string(rep[0].representation)
+            else:
+                epan_lib.proto_item_fill_label(finfo, label_str)
+                finfo_str = epan_ffi.string(label_str)
+
+            finfo_display_str =finfo_str.decode()
+            finfo_display_str = finfo_display_str.\
+                    replace('\\', '\\\\').replace('"', '\\"')
+            finfo_display_str = spaces + cls._remove_ctrl_chars(finfo_display_str)
+
+            return_str += finfo_display_str + "\n"
+
+        newlevel = level + 1
+        child = node.first_child
+        if child != cls.NULL:
+
+            while child != cls.NULL:
+                return_str += cls.print_dissected_tree_details_node(child, newlevel)
+                child = child.next
+
+
+        return return_str
 
     @classmethod
     def packet_to_json(cls, handle_ptr):
         """ An example method that depicts how to use internal dissector API."""
 
-        dissector = handle_ptr[0]
-
-        s = cls.packet_print_func(dissector.tree)
+        s = cls.packet_print_func(handle_ptr)
         try:
             if cls._test_json:
                 _ = json.loads(s, strict=False)
@@ -359,6 +446,14 @@ class WishpyDissectorBase:
             return {}
 
         return s
+
+    @classmethod
+    def _remove_ctrl_chars(cls, s):
+        """Removes the Ctrl Characters from the string.
+        """
+        # FIXME: May be we should replace them with their unicode code points
+        category_fn = unicodedata.category
+        return "".join(ch for ch in s if category_fn(ch)[0] != "C")
 
     def __init__(self, *args, **kw):
         self._epan_dissector = None
