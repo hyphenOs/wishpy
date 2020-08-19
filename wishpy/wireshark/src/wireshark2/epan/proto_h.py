@@ -136,6 +136,14 @@ typedef proto_node proto_item;
 typedef void (*proto_tree_foreach_func)(proto_node *, gpointer);
 extern void proto_tree_children_foreach(proto_tree *tree,
     proto_tree_foreach_func func, gpointer data);
+
+/** Fill given label_str with string representation of field
+ @param fi the item to get the info from
+ @param label_str the string to fill
+ @todo think about changing the parameter profile */
+extern
+void proto_item_fill_label(field_info *fi, gchar *label_str);
+
 """
 
 _ = """
@@ -2174,14 +2182,6 @@ proto_tree_add_eui64_format(proto_tree *tree, int hfindex, tvbuff_t *tvb, gint s
 WS_DLL_PUBLIC proto_item *
 proto_tree_add_debug_text(proto_tree *tree, const char *format,
 	...) G_GNUC_PRINTF(2,3);
-
-
-/** Fill given label_str with string representation of field
- @param fi the item to get the info from
- @param label_str the string to fill
- @todo think about changing the parameter profile */
-WS_DLL_PUBLIC void
-proto_item_fill_label(field_info *fi, gchar *label_str);
 
 
 /** Register a new protocol.
