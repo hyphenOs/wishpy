@@ -1,4 +1,5 @@
 import os
+import glob
 import sys
 import time
 import struct
@@ -10,11 +11,34 @@ import logging
 
 import click
 
-_MAX_TO_PROCESS = 10000000
-
 from wishpy.wireshark.lib.dissector import WishpyDissectorFile
 from wishpy.wireshark.lib.dissector import setup_process, cleanup_process
 from wishpy.utils.profiler import WishpyContextProfiler
+
+
+def get_pcaps_in_dir(ctx, args, incomplete):
+    """Basic auto-complete function for ``filename`` argument.
+
+    See:
+    https://click.palletsprojects.com/en/7.x/bashcomplete/ for details.
+    """
+    if not incomplete:
+        dir_to_search = os.path.abspath(os.getcwd())
+        glob_start = incomplete + "*pcap"
+
+    else:
+        maybe_expand = os.path.expanduser(incomplete)
+        if os.path.isdir(maybe_expand):
+            dir_to_search = maybe_expand
+            incomplete = ""
+        else:
+            dir_to_search = os.path.abspath(os.path.dirname(incomplete))
+            incomplete = os.path.basename(incomplete)
+        glob_start = incomplete + "*pcap"
+
+    to_glob = os.path.join(dir_to_search, glob_start)
+
+    return glob.glob(to_glob)
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option("--pretty", is_flag=True, help="Pretty print output")
@@ -24,7 +48,7 @@ from wishpy.utils.profiler import WishpyContextProfiler
 @click.option("--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
 @click.option("--filter", help="Filter string")
 @click.option("--add-proto-tree", is_flag=True, help="Print like a Wireshark Proto Tree.")
-@click.argument('filename', type=click.Path(exists=True))
+@click.argument('filename', type=click.Path(exists=True), autocompletion=get_pcaps_in_dir)
 def dissect(pretty, profiled, timed, silent, count, filter, add_proto_tree, filename):
     """tshark: dissect packets from a PCAPish file."""
 
@@ -33,7 +57,7 @@ def dissect(pretty, profiled, timed, silent, count, filter, add_proto_tree, file
 
     setup_process()
 
-    WishpyDissectorFile.pretty_print(enabled=pretty, add_proto_tree=add_proto_tree)
+    WishpyDissectorFile.set_pretty_print_details(enabled=pretty, add_proto_tree=add_proto_tree)
 
     dissector = WishpyDissectorFile(filename)
 
