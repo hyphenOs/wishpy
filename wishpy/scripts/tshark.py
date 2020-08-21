@@ -42,14 +42,16 @@ def get_pcaps_in_dir(ctx, args, incomplete):
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option("--pretty", is_flag=True, help="Pretty print output")
+@click.option("-c", "--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
+@click.option("--elasticky", is_flag=True,
+        help="Generate Elastic Friendly Json (Duplicate keys as arrays eg. `ip.addr`).")
+@click.option("--add-proto-tree", is_flag=True, help="Print like a Wireshark Proto Tree.")
 @click.option("--profiled", is_flag=True, help="Profile the operation.")
 @click.option("--timed", is_flag=True, help="Time the operation.")
 @click.option("--silent", is_flag=True, help="Don't print the output.")
-@click.option("--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
 @click.option("--filter", help="Filter string")
-@click.option("--add-proto-tree", is_flag=True, help="Print like a Wireshark Proto Tree.")
 @click.argument('filename', type=click.Path(exists=True), autocompletion=get_pcaps_in_dir)
-def dissect(pretty, profiled, timed, silent, count, filter, add_proto_tree, filename):
+def dissect(filename, pretty, count, elasticky, add_proto_tree, profiled, timed, silent, filter):
     """tshark: dissect packets from a PCAPish file."""
 
     logger = logging.getLogger()
@@ -58,6 +60,9 @@ def dissect(pretty, profiled, timed, silent, count, filter, add_proto_tree, file
     setup_process()
 
     WishpyDissectorFile.set_pretty_print_details(enabled=pretty, add_proto_tree=add_proto_tree)
+
+    if elasticky:
+        WishpyDissectorFile.set_elasticky(elasticky)
 
     dissector = WishpyDissectorFile(filename)
 

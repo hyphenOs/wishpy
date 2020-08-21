@@ -16,11 +16,13 @@ from wishpy.wireshark.lib.dissector import (
         cleanup_process)
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
-@click.option("-c", "--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
 @click.option("--pretty", is_flag=True, help="Pretty print output")
+@click.option("-c", "--count", default=0, help="Number of Packets to dissect (default: 0 - unlimited.)")
+@click.option("--elasticky", is_flag=True,
+        help="Generate Elastic Friendly Json (Duplicate keys as arrays eg. `ip.addr`).")
 @click.option("--filter", help="Filter string")
 @click.argument('interface')
-def dump(count, pretty, filter, interface):
+def dump(count, pretty, elasticky, filter, interface):
     """Capture and dump packets as json."""
 
     try:
@@ -35,7 +37,11 @@ def dump(count, pretty, filter, interface):
 
         setup_process()
 
-        WishpyDissectorQueuePython.pretty_print(enabled=pretty)
+        WishpyDissectorQueuePython.set_pretty_print_details(enabled=pretty)
+
+        if elasticky:
+            WishpyDissectorQueuePython.set_elasticky(elasticky)
+
         dissector = WishpyDissectorQueuePython(packet_queue)
         if filter:
             result, error = dissector.apply_filter(filter)
