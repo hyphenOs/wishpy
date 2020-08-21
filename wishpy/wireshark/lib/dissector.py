@@ -66,6 +66,7 @@ class WishpyDissectorBase:
     _pretty = False
     _add_proto_tree = False
     _test_json = True
+    _elasticky = False
 
     # We are having these definitions in the class because a lot many of them
     # are used in fast path and having them dereferenced here gives us some
@@ -169,6 +170,10 @@ class WishpyDissectorBase:
     FTREPR_DISPLAY = epan_lib.FTREPR_DISPLAY
     fvalue_to_string_repr = epan_lib.fvalue_to_string_repr
     wmem_free = epan_lib.wmem_free
+
+    @classmethod
+    def set_elasticky(cls, enabled):
+        cls._elasticky = enabled
 
     @classmethod
     def enable_json_test(cls):
@@ -435,8 +440,9 @@ class WishpyDissectorBase:
 
         s = cls.packet_print_func(handle_ptr)
         try:
-            if cls._test_json:
-                _ = json.loads(s, strict=False)
+            if cls._elasticky:
+                x = json.loads(s, strict=False, object_pairs_hook=cls.get_elasticky_json)
+                s = json.dumps(x)
         except json.decoder.JSONDecodeError as e:
             _logger.exception("packet_to_json", e.doc)
             return {}
@@ -446,6 +452,25 @@ class WishpyDissectorBase:
             return {}
 
         return s
+
+    @classmethod
+    def get_elasticky_json(cls, values):
+
+        return_dict = {}
+        for k,v in values:
+            dict_key = k.replace(".", "_")
+            if dict_key in return_dict:
+                old = return_dict.pop(dict_key)
+                if isinstance(old, list):
+                    new = [v] + old
+                else:
+                    new = [old, v]
+                return_dict[dict_key] = new
+            else:
+                return_dict[dict_key] = v
+
+        return dict(return_dict)
+
 
     @classmethod
     def _remove_ctrl_chars(cls, s):
