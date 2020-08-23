@@ -358,7 +358,6 @@ def _epan_perform_one_packet_dissection_v3(wishpy_dissector, frames, hdr, packet
 
     dissected = None
     if filter_passed:
-        print(filter_passed)
         dissected = cb_func(epan_dissect_obj)
 
         # Get into last data - useful for relative analysis
