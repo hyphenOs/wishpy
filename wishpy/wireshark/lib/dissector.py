@@ -284,7 +284,122 @@ class WishpyDissectorBase:
     @classmethod
     def print_dissected_tree_json(cls, dissector):
         node = dissector[0].tree
-        return cls.print_dissected_tree_json_node(node)
+        return cls.print_dissected_tree_json_node_simple(node)
+
+    @classmethod
+    def print_dissected_tree_json_node_simple(cls, node_ptr, level=1, add_subtrees=True):
+
+        tabstop = 2
+
+        if cls._elasticky:
+            add_subtrees = False
+
+        inside_subtree = False
+
+        pretty = False
+        spaces = ""
+        if pretty:
+            spaces = " " * tabstop * (level - 1)
+
+        return_str = ""
+        node = node_ptr[0]
+        finfo = node.finfo
+        hfinfo = None
+
+        if finfo != cls.NULL:
+
+            hfinfo = finfo.hfinfo[0]
+            abbrev = cls.epan_string(hfinfo.abbrev).decode()
+            display = hfinfo.display
+
+            finfo_str = cls.fvalue_to_string_repr(
+                    cls.NULL,
+                    cls.addressof(finfo[0].value),
+                    cls.FTREPR_DISPLAY,
+                    display)
+            #print(abbrev, hfinfo.type, finfo_str, level)
+
+            abbrev_str = spaces + "\"" + abbrev + "\":"
+            if hfinfo.type == 0:
+                # FIXME: Properly add a tree here
+                if not add_subtrees:
+
+                    field_str = "\"\""
+                    if node.first_child != cls.NULL:
+                        field_str += ","
+                else:
+
+                    field_str = "{"
+                    inside_subtree = True
+                    if pretty:
+                        field_str += "\n"
+
+                return_str += abbrev_str + field_str
+            elif hfinfo.type == 1:
+
+                # protocol:
+                field_str = "{"
+                inside_subtree = True
+                if pretty:
+                    field_str += "\n"
+
+                return_str += abbrev_str + field_str
+            else:
+                if finfo_str != cls.NULL:
+                    field_str = cls.epan_string(finfo_str).decode()
+                    if hfinfo.type not in cls.unquoted_types:
+                        if hfinfo.type == cls.FT_STRING:
+                            field_str = field_str.\
+                                    replace('\\', '\\\\').replace('"', '\\"')
+                            field_str = cls._remove_ctrl_chars(field_str)
+                        field_str = '"' + field_str + '"'
+                    else:
+                        try:
+                            quote = cls.hfbases[display]
+                        except KeyError as e:
+                            quote = True
+
+                        if quote:
+                            field_str = '"' + field_str + '"'
+
+                else:
+                    field_str = ""
+
+                # If this field has a child, we've to add it's "," now
+                if node.first_child != cls.NULL:
+                    field_str += ","
+                    if pretty:
+                        field_str += "\n"
+
+                return_str += abbrev_str + field_str
+                    # FIXME: We are going to add tree here!!
+        else:
+            # Top Level
+            return_str += "{"
+
+        child = node.first_child
+
+        while child != cls.NULL:
+            child_str = cls.print_dissected_tree_json_node_simple(child, level+1)
+            return_str += child_str
+
+            child = child.next
+
+        if finfo != cls.NULL:
+            if inside_subtree:
+                return_str += spaces + "}"
+        else:
+            # Top Level
+            return_str += "}"
+
+        if node.next != cls.NULL:
+            if return_str:
+                return_str += ","
+
+        if pretty:
+            return_str += "\n"
+
+        return return_str
 
     @classmethod
     def print_dissected_tree_json_node(cls, node_ptr, level=1):
@@ -444,7 +559,7 @@ class WishpyDissectorBase:
                 x = json.loads(s, strict=False, object_pairs_hook=cls.get_elasticky_json)
                 s = json.dumps(x)
         except json.decoder.JSONDecodeError as e:
-            _logger.exception("packet_to_json", e.doc)
+            _logger.exception("packet_to_json %s", e.doc)
             return {}
         except Exception as e:
             _logger.exception("packet_to_json")
