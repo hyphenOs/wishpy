@@ -42,7 +42,7 @@ def dump(count, pretty, elasticky, filter, interface):
         if elasticky:
             WishpyDissectorQueuePython.set_elasticky(elasticky)
 
-        dissector = WishpyDissectorQueuePython(packet_queue)
+        dissector = WishpyDissectorQueuePython(packet_queue, interface)
         if filter:
             result, error = dissector.apply_filter(filter)
             if result != 0:

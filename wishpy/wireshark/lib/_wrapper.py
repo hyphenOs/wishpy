@@ -90,7 +90,7 @@ def _epan_init_v3():
 
     return result
 
-def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet_data, cb_func):
+def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet_data, enc_type, cb_func):
     """Performs dissection of a single packet using v2.6
     """
 
@@ -139,7 +139,7 @@ def _epan_perform_one_packet_dissection_v2(wishpy_dissector, frames, hdr, packet
     epan_lib.wtap_rec_init(rec)
     rec[0].rec_header.packet_header.len = packet_len
     rec[0].rec_header.packet_header.caplen = packet_capture_len
-    rec[0].rec_header.packet_header.pkt_encap = 1 # FIXME: Hard coded
+    rec[0].rec_header.packet_header.pkt_encap = enc_type
     rec[0].ts.secs = hdr[0].ts.tv_sec
     rec[0].ts.nsecs = hdr[0].ts.tv_usec * 1000 # Asumes usec precision FIXME
     rec[0].presence_flags = epan_lib.WTAP_HAS_TS | epan_lib.WTAP_HAS_CAP_LEN
@@ -275,7 +275,7 @@ def _epan_perform_dissection_v2(wishpy_dissector, wth, wth_file_type, cb_func, c
         else:
             break
 
-def _epan_perform_one_packet_dissection_v3(wishpy_dissector, frames, hdr, packet_data, cb_func):
+def _epan_perform_one_packet_dissection_v3(wishpy_dissector, frames, hdr, packet_data, enc_type, cb_func):
     """Performs a single packet dissection.
     """
 
@@ -322,7 +322,7 @@ def _epan_perform_one_packet_dissection_v3(wishpy_dissector, frames, hdr, packet
     epan_lib.wtap_rec_init(rec)
     rec[0].rec_header.packet_header.len = packet_len
     rec[0].rec_header.packet_header.caplen = packet_capture_len
-    rec[0].rec_header.packet_header.pkt_encap = 1 # FIXME: Hard coded
+    rec[0].rec_header.packet_header.pkt_encap = enc_type
     rec[0].ts.secs = hdr[0].ts.tv_sec
     rec[0].ts.nsecs = hdr[0].ts.tv_usec * 1000 # Asumes usec precision FIXME
     rec[0].presence_flags = epan_lib.WTAP_HAS_TS | epan_lib.WTAP_HAS_CAP_LEN

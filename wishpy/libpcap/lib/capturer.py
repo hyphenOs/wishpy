@@ -18,8 +18,9 @@ except ImportError:
     else:
         raise
 
-PCAPHeader = namedtuple('PCAPHeader', ['ts_sec', 'ts_usec', 'len', 'caplen'])
+PCAPHeader = namedtuple('PCAPHeader', ['dltype', 'ts_sec', 'ts_usec', 'len', 'caplen'])
 PCAPHeader.__doc___ = """A Wrapper around PCAP Header."""
+PCAPHeader.dltype.__doc__ = "Data Link Layer type as per libpcap"
 PCAPHeader.ts_sec.__doc__ = "seconds part of the timestamp."
 PCAPHeader.ts_usec.__doc__ = "micro-seconds part of the timestamp."
 PCAPHeader.len.__doc__ = "length of the packet."
@@ -87,6 +88,7 @@ class WishpyCapturerQueue(WishpyCapturer):
         """
         self._queue = queue
         self._pcap_handle = None
+        self._dltype = -1
 
     @property
     def queue(self):
@@ -130,7 +132,8 @@ class WishpyCapturerQueue(WishpyCapturer):
                 hdr = hdr[0]
                 caplen = hdr.caplen
                 ser_header = PCAPHeader(
-                        *(hdr.ts.tv_sec, hdr.ts.tv_usec,
+                        *(self._dltype,
+                            hdr.ts.tv_sec, hdr.ts.tv_usec,
                             caplen, hdr.len))
                 ser_data = bytes(pcap_ffi.unpack(data, caplen))
                 self._queue.put((ser_header, ser_data))
@@ -265,7 +268,17 @@ class WishpyCapturerIfaceToQueue(WishpyCapturerQueue):
             raise WishpyCapturerOpenError("Failed to activate: {}".\
                     format(err_str))
 
+        dltype = pcap_lib.pcap_datalink(handle)
+        if dltype < 0:
+            self.close()
+
+            err_charptr = pcap_lib.pcap_geterr(handle)
+            err_str = pcap_ffi.string(err_charptr).decode()
+            raise WishpyCapturerOpenError("Failed to get Datalink Layer Type: {}".\
+                    format(err_str))
+
         # FIXME: Warning to be reported
+        self._dltype = dltype
         self.__pcap_activated = True
         self._pcap_handle = handle
 
@@ -312,6 +325,7 @@ class WishpyCapturerFileToQueue(WishpyCapturerQueue):
         super().__init__(queue, **kw)
 
         self.__filename = filename
+        self._dltype = -1
 
     @property
     def filename(self):
@@ -329,7 +343,17 @@ class WishpyCapturerFileToQueue(WishpyCapturerQueue):
             err_str = pcap_ffi.string(err_buff)
             raise WishpyCapturerOpenError(err_str)
 
+        dltype = pcap_lib.pcap_datalink(handle)
+        if dltype < 0:
+            self.close()
+
+            err_charptr = pcap_lib.pcap_geterr(handle)
+            err_str = pcap_ffi.string(err_charptr).decode()
+            raise WishpyCapturerOpenError("Failed to get Datalink Layer Type: {}".\
+                    format(err_str))
+
         self._pcap_handle = handle
+        self._dltype = dltype
 
     def close(self):
         """ Closes internal `libpcap` handle
@@ -340,6 +364,7 @@ class WishpyCapturerFileToQueue(WishpyCapturerQueue):
         if self._pcap_handle is not None:
             pcap_lib.pcap_close(self._pcap_handle)
         self._pcap_handle = None
+        self._dltype = -1
 
         _logger.debug("%s.close", self.__class__.__name__)
 

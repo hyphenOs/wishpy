@@ -167,6 +167,10 @@ class WishpyDissectorBase:
 
      }
 
+    libpcap_to_wtap_enctpyes = {
+            1: 1, # Enctype Ethernet is same
+            127: 23 # Radiotap
+    }
     FTREPR_DISPLAY = epan_lib.FTREPR_DISPLAY
     fvalue_to_string_repr = epan_lib.fvalue_to_string_repr
     wmem_free = epan_lib.wmem_free
@@ -750,6 +754,10 @@ class WishpyDissectorFile(WishpyDissectorBase):
         super().__init__()
         self.__filename = filename
 
+    @property
+    def filename(self):
+        return self.__filename
+
     def run(self, count=0, skip=-1):
         """Actual function that performs the Dissection.
 
@@ -812,6 +820,8 @@ class WishpyDissectorQueue(WishpyDissectorBase):
             self._stop_requested = True
             return hdr, data, None
 
+        dltype = 1 # Default link type is Ethernet
+
         # FIXME: This might slowdown things but for now fine.
         if isinstance(hdr, PCAPHeader):
             newhdr = pcap_ffi.new('struct pcap_pkthdr *')
@@ -819,6 +829,8 @@ class WishpyDissectorQueue(WishpyDissectorBase):
             newhdr[0].ts.tv_usec = hdr.ts_usec
             newhdr[0].caplen = hdr.caplen
             newhdr[0].len = hdr.len
+
+            dltype = self.libpcap_to_wtap_enctpyes[hdr.dltype]
 
             hdr = newhdr
 
@@ -829,8 +841,9 @@ class WishpyDissectorQueue(WishpyDissectorBase):
 
                 data = newdata
 
-        d = epan_perform_one_packet_dissection(self, self._packets_fetched,
-                hdr, data, self.packet_to_json)
+        d = epan_perform_one_packet_dissection(self,
+                self._packets_fetched,
+                hdr, data, dltype, self.packet_to_json)
 
         return hdr, data, d
 
@@ -849,7 +862,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
     """Dissector class for Python Standard Library Queue.
     """
 
-    def __init__(self, queue):
+    def __init__(self, queue, iface_name=None):
 
         super().__init__()
 
@@ -857,6 +870,15 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
         self.__running = False
         self._stop_requested = False
         self._packets_fetched = 0
+        self.__iface_name = iface_name
+
+
+    @property
+    def iface_name(self):
+        if self.__iface_name is None:
+            return "unknown"
+        else:
+            self.__iface_name
 
     def fetch(self):
         """Blocking Fetch from a Python Queue.
