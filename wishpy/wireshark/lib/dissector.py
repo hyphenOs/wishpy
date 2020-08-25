@@ -167,6 +167,10 @@ class WishpyDissectorBase:
 
      }
 
+    libpcap_to_wtap_enctpyes = {
+            1: 1, # Enctype Ethernet is same
+            127: 23 # Radiotap
+    }
     FTREPR_DISPLAY = epan_lib.FTREPR_DISPLAY
     fvalue_to_string_repr = epan_lib.fvalue_to_string_repr
     wmem_free = epan_lib.wmem_free
@@ -812,6 +816,8 @@ class WishpyDissectorQueue(WishpyDissectorBase):
             self._stop_requested = True
             return hdr, data, None
 
+        dltype = 1 # Default link type is Ethernet
+
         # FIXME: This might slowdown things but for now fine.
         if isinstance(hdr, PCAPHeader):
             newhdr = pcap_ffi.new('struct pcap_pkthdr *')
@@ -819,6 +825,8 @@ class WishpyDissectorQueue(WishpyDissectorBase):
             newhdr[0].ts.tv_usec = hdr.ts_usec
             newhdr[0].caplen = hdr.caplen
             newhdr[0].len = hdr.len
+
+            dltype = self.libpcap_to_wtap_enctpyes[hdr.dltype]
 
             hdr = newhdr
 
@@ -829,8 +837,9 @@ class WishpyDissectorQueue(WishpyDissectorBase):
 
                 data = newdata
 
-        d = epan_perform_one_packet_dissection(self, self._packets_fetched,
-                hdr, data, self.packet_to_json)
+        d = epan_perform_one_packet_dissection(self,
+                self._packets_fetched,
+                hdr, data, dltype, self.packet_to_json)
 
         return hdr, data, d
 
