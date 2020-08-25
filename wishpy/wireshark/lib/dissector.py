@@ -754,6 +754,10 @@ class WishpyDissectorFile(WishpyDissectorBase):
         super().__init__()
         self.__filename = filename
 
+    @property
+    def filename(self):
+        return self.__filename
+
     def run(self, count=0, skip=-1):
         """Actual function that performs the Dissection.
 
@@ -858,7 +862,7 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
     """Dissector class for Python Standard Library Queue.
     """
 
-    def __init__(self, queue):
+    def __init__(self, queue, iface_name=None):
 
         super().__init__()
 
@@ -866,6 +870,15 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
         self.__running = False
         self._stop_requested = False
         self._packets_fetched = 0
+        self.__iface_name = iface_name
+
+
+    @property
+    def iface_name(self):
+        if self.__iface_name is None:
+            return "unknown"
+        else:
+            self.__iface_name
 
     def fetch(self):
         """Blocking Fetch from a Python Queue.
