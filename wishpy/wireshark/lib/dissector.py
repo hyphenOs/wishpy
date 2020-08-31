@@ -4,8 +4,8 @@ This module provides consistent APIs for using wireshark's dissector in
 different scenarios. viz. using with live packet capture and using with
 a PCAP file. A couple of dissector classes are provided that can be directly used.
 
-WishpyDissectorQueuePython : Can be used with `wishpy.libpcap.lib.capturer.Capturer`
-WishpyDissectorFile: Can be used for printing json data from a pcap(ish) file.
+:class:`WishpyDissectorQueuePython` : Can be used with :class:`wishpy.libpcap.lib.capturer.WishpyCapturer`
+:class:`WishpyDissectorFile`: Can be used for printing json data from a pcap(ish) file.
 
 Example:
 
@@ -14,6 +14,7 @@ Example:
     print(packet)
 
 """
+
 import os
 import socket
 import struct
@@ -60,7 +61,7 @@ _EPAN_LIB_INITIALIZED = False
 
 class WishpyDissectorBase:
     """ A Class that wraps the underlying dissector from epan module of
-    `libwireshark`. Right now this simply prints the dissector tree.
+    ``libwireshark``. Right now this simply prints the dissector tree.
     """
 
     _pretty = False
@@ -177,14 +178,18 @@ class WishpyDissectorBase:
 
     @classmethod
     def set_elasticky(cls, enabled):
+        """Enable Elastic Compatible Json output."""
         cls._elasticky = enabled
 
     @classmethod
     def enable_json_test(cls):
+        """Enable ``json.loads`` test of the generated Json."""
+
         cls._test_json = True
 
     @classmethod
     def set_pretty_print_details(cls, enabled=False, add_proto_tree=False):
+        """Set Pretty Printing and Details of a Packet Field."""
         cls._pretty = enabled
         if enabled:
             cls.packet_print_func = cls.print_dissected_tree_json_pretty
@@ -196,6 +201,7 @@ class WishpyDissectorBase:
 
     @classmethod
     def print_dissected_tree_json_pretty(cls, dissector):
+        """Pretty prints dissected tree."""
         node = dissector[0].tree
         return cls.print_dissected_tree_json_node_pretty(node)
 
@@ -484,6 +490,8 @@ class WishpyDissectorBase:
     @classmethod
     def print_dissected_tree_details_api(cls, dissector):
         """Print a packets Protocol tree using `proto_tree_json` API
+
+        (Note: This method should not be used, instead use `print_dissected_tree_details`.)
         """
         ops = epan_ffi.new('print_stream_ops_t *')
         print_stream = new_wishpy_print_stream(ops)
@@ -500,7 +508,7 @@ class WishpyDissectorBase:
 
     @classmethod
     def print_dissected_tree_details(cls, dissector):
-        """
+        """Packet Details view of the Dissected Tree like Wireshark Packet Details.
         """
         node = dissector[0].tree
         level = 0
@@ -509,7 +517,11 @@ class WishpyDissectorBase:
 
     @classmethod
     def print_dissected_tree_details_node(cls, node_ptr, level):
+        """Print details of a single Node.
 
+        (Note: This method should not be called directly as yet, instead, one should call
+        the `print_dissected_tree_details` method, which internally calls this.)
+        """
         tabstop = 4
         label_str = epan_ffi.new('gchar [240]')
         return_str = ""
@@ -555,12 +567,12 @@ class WishpyDissectorBase:
 
     @classmethod
     def packet_to_json(cls, handle_ptr):
-        """ An example method that depicts how to use internal dissector API."""
+        """An example method that depicts how to use internal dissector API."""
 
         s = cls.packet_print_func(handle_ptr)
         try:
             if cls._elasticky:
-                x = json.loads(s, strict=False, object_pairs_hook=cls.get_elasticky_json)
+                x = json.loads(s, strict=False, object_pairs_hook=cls._get_elasticky_json)
                 s = json.dumps(x)
         except json.decoder.JSONDecodeError as e:
             _logger.exception("packet_to_json %s", e.doc)
@@ -573,8 +585,8 @@ class WishpyDissectorBase:
         return s
 
     @classmethod
-    def get_elasticky_json(cls, values):
-
+    def _get_elasticky_json(cls, values):
+        """Internal method called when ``Elastic`` compatible output is desired."""
         return_dict = {}
         for k,v in values:
             dict_key = k.replace(".", "_")
@@ -600,13 +612,13 @@ class WishpyDissectorBase:
         return "".join(ch for ch in s if category_fn(ch)[0] != "C")
 
     def __init__(self, *args, **kw):
-        self._epan_dissector = None
-        self._elapsed_time_ptr = None
-        self._ref_frame_data_ptr = None
-        self._first_frame_data = None
-        self._last_frame_data = None
-        self._provider = None
-        self._dfilter_obj_ptr = None
+        self._epan_dissector = None    #: Handle to Epan Dissector Object (``epan_dissect_t``).
+        self._elapsed_time_ptr = None  #: Used for finding time relative to first frame
+        self._ref_frame_data_ptr = None #: Reference Frame data pointer (points to first frame usually).
+        self._first_frame_data = None #: First frame in the dissection
+        self._last_frame_data = None  #: Previous frame in the dissection.
+        self._provider = None         #: Dissection callback functions 'provider'.
+        self._dfilter_obj_ptr = None  #: Handle to compiled filter object (``dfilter_t``).
 
     @property
     def last_frame_data(self):
@@ -641,7 +653,7 @@ class WishpyDissectorBase:
         return self._epan_dissector[0].session
 
     def init_epan_dissector(self):
-        """Initializes `epan_dissect_t` and `epan_session` objects. These
+        """Initializes ``epan_dissect_t`` and ``epan_session`` objects. These
         objects are passed to the `run` method.
         """
         if self._epan_dissector is not None:
@@ -665,6 +677,8 @@ class WishpyDissectorBase:
 
     def cleanup_epan_dissector(self):
         """Cleans up internal dissector object.
+
+        This method should be called as the last part of :func:`run` method.
         """
         session = self.epan_session
 
@@ -684,7 +698,7 @@ class WishpyDissectorBase:
 
 
     def run(self, *args, **kw):
-        """A generator function ``yield``ing at\-least the dissected packets.
+        """A generator function ``yield`` ing at\-least the dissected packets.
 
 
         Implementing this as a generator function helps one to run code
@@ -761,9 +775,15 @@ class WishpyDissectorFile(WishpyDissectorBase):
     def run(self, count=0, skip=-1):
         """Actual function that performs the Dissection.
 
+        Args:
+            count (int, optional): The number of packets to run for.
+            skip (int, optional): Skip the number of packets.
+
+        Raises:
+                :class:`WishpyErrorWthOpen`: If the handle cannot be opened.
+
         Right now since we are only supporting dissecting packets from Wiretap
         supported files, only dissects packets from a pcap(ish) file.
-
         """
 
         if not _EPAN_LIB_INITIALIZED:
@@ -772,7 +792,6 @@ class WishpyDissectorFile(WishpyDissectorBase):
                     )
 
         self.init_epan_dissector()
-        # FIXME: dissector.run can be run only once right now
         # FIXME: Pass errno / errstr ourselves to get the error to be passed
         # to the Exception handler
 
@@ -809,10 +828,8 @@ class WishpyDissectorQueue(WishpyDissectorBase):
     def dissect_one_packet(self):
         """Dissects a single packet
 
-        This should typically call ``fetch`` and the perform dissection. All
-        the queue based 'dissectors' will dissect one packet at a time, so
-        it's better that this function is in the base class.
-
+        Calls the :func:`fetch` method to fetch a single packet and then performs dissection using
+        the wrapped ``epan_perform_one_packet_dissection``.
         """
         hdr, data = self.fetch()
 
@@ -863,7 +880,14 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
     """
 
     def __init__(self, queue, iface_name=None):
+        """Constructor
 
+        Args:
+            queue: A python Queue like object
+
+            iface\_name (str, optional): Name of the interface
+
+        """
         super().__init__()
 
         self.__queue = queue
@@ -882,6 +906,9 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
     def fetch(self):
         """Blocking Fetch from a Python Queue.
+
+        Returns:
+            (hdr, data): A tuple containing PCAP like header and packet data.
         """
         hdr, data = self.__queue.get()
         self._packets_fetched += 1
@@ -896,9 +923,17 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
         return self.dissect_one_packet()
 
     def run(self, count=0):
-        """yield's the packet, up to maximum of `count` packets.
+        """Runs the dissection function for the packets fetched from the queue.
 
-        if count is <= 0, infinite iterator.
+        Args:
+            count (int, optional): The number of packets to run dissector for.
+
+        Yields:
+            packet: A dissected json of the packet.
+
+        if count is <= 0, infinite iterator. This iterator can be stopped by receiving
+        an object of the form (stop, None) from the queue. So the write of the queue
+        will have to ensure this. Or Call the `stop` method.
 
         """
 
@@ -940,7 +975,8 @@ class WishpyDissectorQueuePython(WishpyDissectorQueue):
 
 
 def setup_process():
-    """
+    """Per process initialization.
+
     This method should be called once per process (note: Not thread.) This
     will perform underlying library initialization, so that eventually
     dissectors can `run`.
@@ -957,8 +993,7 @@ def setup_process():
 
 
 def cleanup_process():
-    """
-    Per process cleanup. de-init of epan/wtap modules.
+    """Per process cleanup. de-init of epan/wtap modules.
     """
 
     global _EPAN_LIB_INITIALIZED
@@ -969,4 +1004,3 @@ def cleanup_process():
         _logger.warning("cleanup_process called without init process!")
 
     _EPAN_LIB_INITIALIZED = False
-
