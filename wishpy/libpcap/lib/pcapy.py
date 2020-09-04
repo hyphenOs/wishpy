@@ -156,9 +156,26 @@ def compile(linktype, snaplen, filterstr, optimize=False, netmask=0):
     except Exception as e:
         raise PcapError("Unknown Error Occurred.")
 
-def create(): #pragma: no cover
-    pass
+def create(interface): #pragma: no cover
+    """Creates a PCAP Handle for the iface identified by given interface.
+    """
+    net = _pcap_ffi.new('bpf_u_int32 *')
+    mask = _pcap_ffi.new('bpf_u_int32 *')
+    err_buf = _pcap_ffi.new('char [256]')
 
+    result = _pcap_lib.pcap_lookupnet(interface.encode(), net, mask, err_buf)
+    if result != 0:
+        err_str = _pcap_ffi.string(err_buf).decode()
+        raise PcapError(err_str)
+
+    handle = _pcap_lib.pcap_create(interface.encode(), err_buf)
+    if handle == _pcap_ffi.NULL:
+        err_str = _pcap_ffi.string(err_buf).decode()
+        raise PcapError(err_str)
+
+    n, m = net[0], mask[0]
+
+    return Reader(handle, n, m)
 
 class BPFProgram:
     """Class representing a `BPF` program.
@@ -264,10 +281,13 @@ class Reader:
         """internal function that raises `PcapError` if the `__pcap_handle`
         is closed or is None.
         """
-
         if self.__pcap_handle is None:
             raise ValueError("Pcap Handle is already closed.")
 
+    @property
+    def handle(self):
+        warnings.warn("Using Internal Handle is Strongly discouraged. Use at your own risk.")
+        return self.__pcap_handle
 
     def activate(self):
         """Activate a capture handle created using `create`
@@ -416,7 +436,6 @@ class Reader:
 
         return pkt_hdr, bytes(pkt_data)
 
-
     def sendpacket(self, data, length):
         """Sends the given data on the given PCAP Handle.
         """
@@ -519,7 +538,24 @@ class Reader:
 
         return result
 
-    #FIXME: Add set_ts_precision and get_ts_precision and list_ts_precisions funcs.
+    def set_ts_precision(self, precision):
+        """Set's Time Stamp precision on the given Reader Object."""
+
+        result = _pcap_lib.pcap_set_tstamp_precision(self.__pcap_handle, precision)
+        if result < 0:
+            result_str = _pcap_lib.pcap_geterr(self.__pcap_handle)
+            raise PcapError(_pcap_ffi.string(result_str).decode())
+
+    def get_ts_precision(self):
+        """Set's Time Stamp precision on the given Reader Object."""
+
+        result = _pcap_lib.pcap_get_tstamp_precision(self.__pcap_handle)
+        if result < 0:
+            result_str = _pcap_lib.pcap_geterr(self.__pcap_handle)
+            raise PcapError(_pcap_ffi.string(result_str).decode())
+
+        return result
+
     def stats(self):
         """Get's the PCAP Stats.
         """

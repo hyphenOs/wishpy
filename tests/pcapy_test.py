@@ -192,6 +192,14 @@ class TestPcapy(unittest.TestCase):
 
         self.assertNotEqual(iface, None)
 
+    def test_pcapy_create(self):
+        """
+        Test's `create` API of PCapy
+        """
+
+        with self.assertRaises(pcapy.PcapError) as e:
+            _ = pcapy.create('foo')
+
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestPcapy)
 result = unittest.TextTestRunner(verbosity=2).run(suite)
