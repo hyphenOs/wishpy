@@ -69,7 +69,7 @@ if sys.platform != 'win32':
     all_cffi_modules.append(libpcap_ffi_module)
 
 setup(name='wishpy',
-        version='0.1.1',
+        version='0.1.2',
         description='Python Bindings for Wireshark and libpcap using cffi',
         long_description=open('README.rst').read(),
         author='hyphenOs Software Labs',
