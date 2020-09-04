@@ -264,10 +264,13 @@ class Reader:
         """internal function that raises `PcapError` if the `__pcap_handle`
         is closed or is None.
         """
-
         if self.__pcap_handle is None:
             raise ValueError("Pcap Handle is already closed.")
 
+    @property
+    def handle(self):
+        warnings.warn("Using Internal Handle is Strongly discouraged. Use at your own risk.")
+        return self.__pcap_handle
 
     def activate(self):
         """Activate a capture handle created using `create`
@@ -416,7 +419,6 @@ class Reader:
 
         return pkt_hdr, bytes(pkt_data)
 
-
     def sendpacket(self, data, length):
         """Sends the given data on the given PCAP Handle.
         """
@@ -519,7 +521,24 @@ class Reader:
 
         return result
 
-    #FIXME: Add set_ts_precision and get_ts_precision and list_ts_precisions funcs.
+    def set_ts_precision(self, precision):
+        """Set's Time Stamp precision on the given Reader Object."""
+
+        result = _pcap_lib.pcap_set_tstamp_precision(self.__pcap_handle, precision)
+        if result < 0:
+            result_str = _pcap_lib.pcap_geterr(self.__pcap_handle)
+            raise PcapError(_pcap_ffi.string(result_str).decode())
+
+    def get_ts_precision(self):
+        """Set's Time Stamp precision on the given Reader Object."""
+
+        result = _pcap_lib.pcap_get_tstamp_precision(self.__pcap_handle)
+        if result < 0:
+            result_str = _pcap_lib.pcap_geterr(self.__pcap_handle)
+            raise PcapError(_pcap_ffi.string(result_str).decode())
+
+        return result
+
     def stats(self):
         """Get's the PCAP Stats.
         """
