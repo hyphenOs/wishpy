@@ -170,7 +170,8 @@ class WishpyDissectorBase:
 
     libpcap_to_wtap_enctpyes = {
             1: 1, # Enctype Ethernet is same
-            127: 23 # Radiotap
+            127: 23, # Radiotap
+            113: 25
     }
     FTREPR_DISPLAY = epan_lib.FTREPR_DISPLAY
     fvalue_to_string_repr = epan_lib.fvalue_to_string_repr
